@@ -5,7 +5,16 @@ using DaikinDesktopController.App.Localization;
 namespace DaikinDesktopController.App.Settings;
 public partial class SettingsWindow : Window
 {
-    public SettingsWindow() => InitializeComponent();
+    public SettingsWindow()
+    {
+        InitializeComponent();
+        Navigation.ItemsSource = Enum.GetValues<SettingsSection>().Select(section =>
+        {
+            var item = new ListBoxItem { Tag = section };
+            item.SetBinding(ContentControl.ContentProperty, new Binding($"[{section}]") { Source = Localizer.Instance });
+            return item;
+        }).ToArray();
+    }
     public void Show(SettingsSection section = SettingsSection.Secrets)
     {
         Navigation.SelectedIndex = (int)section;
