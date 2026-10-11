@@ -1,0 +1,1 @@
+<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><OutputType>WinExe</OutputType><UseWPF>true</UseWPF><UseWindowsForms>true</UseWindowsForms><ApplicationIcon>Assets/TrayIcon.ico</ApplicationIcon></PropertyGroup><ItemGroup><Resource Include="Assets/TrayIcon.ico" /><Using Remove="System.Windows.Forms" /><Using Remove="System.Drawing" /></ItemGroup></Project>
