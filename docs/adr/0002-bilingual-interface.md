@@ -1,0 +1,3 @@
+# Support Brazilian Portuguese and English from the first release
+
+The application will support Brazilian Portuguese and English from its first release, with a language selector in the Settings Window. Changing the App Language will update all open application windows immediately without a restart. On first launch, the app will follow the Windows display language when supported and otherwise default to Brazilian Portuguese; a language selected by the user will be saved and take precedence on later launches. User-facing strings will use a localization structure that can accept additional languages later, so adding another locale does not require rewriting the interface.
