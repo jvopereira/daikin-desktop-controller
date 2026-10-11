@@ -1,1 +1,68 @@
-<root><resheader name="resmimetype"><value>text/microsoft-resx</value></resheader><resheader name="version"><value>2.0</value></resheader><resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader><resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader><data name="AppName" xml:space="preserve"><value>Daikin Desktop Controller</value></data><data name="Exit" xml:space="preserve"><value>Sair</value></data><data name="Settings" xml:space="preserve"><value>Configurações</value></data><data name="FirstRunTitle" xml:space="preserve"><value>Configure seu ar-condicionado</value></data><data name="FirstRunMessage" xml:space="preserve"><value>Nenhum ar-condicionado configurado. Abra as Configurações para adicionar a chave secreta do dispositivo.</value></data><data name="Secrets" xml:space="preserve"><value>Segredos</value></data><data name="Device" xml:space="preserve"><value>Dispositivo</value></data><data name="General" xml:space="preserve"><value>Geral</value></data><data name="SecretsPlaceholder" xml:space="preserve"><value>A configuração da chave secreta do dispositivo estará disponível aqui.</value></data><data name="DevicePlaceholder" xml:space="preserve"><value>A descoberta e conexão do ar-condicionado estarão disponíveis aqui.</value></data><data name="GeneralPlaceholder" xml:space="preserve"><value>As preferências de idioma, tema e inicialização estarão disponíveis aqui.</value></data><data name="StartupRegistrationError" xml:space="preserve"><value>Não foi possível ativar a inicialização ao entrar no Windows. Verifique suas permissões.</value></data></root>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms</value>
+  </resheader>
+  <data name="AppName" xml:space="preserve">
+    <value>Daikin Desktop Controller</value>
+  </data>
+  <data name="Exit" xml:space="preserve">
+    <value>Sair</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>Configurações</value>
+  </data>
+  <data name="FirstRunTitle" xml:space="preserve">
+    <value>Configure seu ar-condicionado</value>
+  </data>
+  <data name="FirstRunMessage" xml:space="preserve">
+    <value>Nenhum ar-condicionado configurado. Abra as Configurações para adicionar a chave secreta do dispositivo.</value>
+  </data>
+  <data name="Secrets" xml:space="preserve">
+    <value>Segredos</value>
+  </data>
+  <data name="Device" xml:space="preserve">
+    <value>Dispositivo</value>
+  </data>
+  <data name="General" xml:space="preserve">
+    <value>Geral</value>
+  </data>
+  <data name="SecretsPlaceholder" xml:space="preserve">
+    <value>A configuração da chave secreta do dispositivo estará disponível aqui.</value>
+  </data>
+  <data name="DevicePlaceholder" xml:space="preserve">
+    <value>A descoberta e conexão do ar-condicionado estarão disponíveis aqui.</value>
+  </data>
+  <data name="LanguageName" xml:space="preserve">
+    <value>Português (Brasil)</value>
+  </data>
+  <data name="AppLanguage" xml:space="preserve">
+    <value>Idioma do aplicativo</value>
+  </data>
+  <data name="ThemePreference" xml:space="preserve">
+    <value>Preferência de tema</value>
+  </data>
+  <data name="ThemeSystem" xml:space="preserve">
+    <value>Sistema</value>
+  </data>
+  <data name="ThemeLight" xml:space="preserve">
+    <value>Claro</value>
+  </data>
+  <data name="ThemeDark" xml:space="preserve">
+    <value>Escuro</value>
+  </data>
+  <data name="LaunchAtSignIn" xml:space="preserve">
+    <value>Iniciar ao entrar no Windows</value>
+  </data>
+  <data name="LaunchAtSignInError" xml:space="preserve">
+    <value>Não foi possível atualizar a inicialização ao entrar no Windows. Verifique suas permissões.</value>
+  </data>
+</root>

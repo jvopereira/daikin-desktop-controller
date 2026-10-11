@@ -2,12 +2,15 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using DaikinDesktopController.App.Localization;
+using DaikinDesktopController.App.Preferences;
 namespace DaikinDesktopController.App.Settings;
 public partial class SettingsWindow : Window
 {
-    public SettingsWindow()
+    private readonly GeneralSettingsView general;
+    public SettingsWindow(PreferencesSession preferences)
     {
         InitializeComponent();
+        general = new GeneralSettingsView(preferences);
         Navigation.ItemsSource = Enum.GetValues<SettingsSection>().Select(section =>
         {
             var item = new ListBoxItem { Tag = section };
@@ -24,7 +27,10 @@ public partial class SettingsWindow : Window
     }
     private void SectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (Placeholder is null || Navigation.SelectedItem is not ListBoxItem item) return;
-        Placeholder.SetBinding(TextBlock.TextProperty, new Binding($"[{item.Tag}Placeholder]") { Source = Localizer.Instance });
+        if (SectionContent is null || Navigation.SelectedItem is not ListBoxItem item) return;
+        if (item.Tag is SettingsSection.General) { SectionContent.Content = general; return; }
+        var placeholder = new TextBlock { FontSize = 16, TextWrapping = TextWrapping.Wrap };
+        placeholder.SetBinding(TextBlock.TextProperty, new Binding($"[{item.Tag}Placeholder]") { Source = Localizer.Instance });
+        SectionContent.Content = placeholder;
     }
 }
