@@ -38,6 +38,59 @@ public class SetupTests
         if (outcome == StatusReadOutcome.KeyRejected) Assert.IsType<KeyRejected>(fixture.Coordinator.State);
         else Assert.IsType<UnexpectedResponse>(fixture.Coordinator.State);
     }
+    [Theory]
+    [InlineData(StatusReadOutcome.Unreachable)]
+    [InlineData(StatusReadOutcome.KeyRejected)]
+    [InlineData(StatusReadOutcome.UnexpectedResponse)]
+    public async Task FailedReplacementPreservesExistingConfiguration(StatusReadOutcome outcome)
+    {
+        var fixture = new Fixture([Unit]);
+        var previous = new AirConditionerConfiguration("previous", "192.0.2.10");
+        fixture.Configuration.Save(previous);
+        fixture.Client.Read = (_,_) => Task.FromResult(new StatusRead(outcome));
+        await fixture.Coordinator.StartAsync();
+        Assert.Equal(previous, fixture.Configuration.Load());
+        Assert.False(StartupDecision.ShouldOpenPanel(fixture.Configuration));
+    }
+    [Fact] public async Task UnreachableManualReplacementAndEmptyDiscoveryPreserveExistingConfiguration()
+    {
+        var fixture = new Fixture([], "192.0.2.2");
+        var previous = new AirConditionerConfiguration("previous", "192.0.2.10");
+        fixture.Configuration.Save(previous);
+        fixture.Client.Read = (_,_) => Task.FromResult(new StatusRead(StatusReadOutcome.Unreachable));
+        await fixture.Coordinator.StartAsync();
+        Assert.Equal(1, fixture.Discovery.Calls);
+        Assert.IsType<NotFound>(fixture.Coordinator.State);
+        Assert.Equal(previous, fixture.Configuration.Load());
+    }
+    [Fact] public async Task ExistingConfigurationIsReplacedOnlyAfterSuccessfulStatusRead()
+    {
+        var fixture = new Fixture([Unit]);
+        var previous = new AirConditionerConfiguration("previous", "192.0.2.10");
+        fixture.Configuration.Save(previous);
+        var completion = new TaskCompletionSource<StatusRead>();
+        fixture.Client.Read = (_,_) => completion.Task;
+        var pairing = fixture.Coordinator.StartAsync();
+        Assert.IsType<Pairing>(fixture.Coordinator.State);
+        Assert.Equal(previous, fixture.Configuration.Load());
+        completion.SetResult(Success());
+        await pairing;
+        Assert.IsType<Configured>(fixture.Coordinator.State);
+        Assert.Equal(new AirConditionerConfiguration(Unit.Id, Unit.Address.ToString()), fixture.Configuration.Load());
+    }
+    [Fact] public async Task CancelledReplacementPreservesExistingConfiguration()
+    {
+        var fixture = new Fixture([Unit]);
+        var previous = new AirConditionerConfiguration("previous", "192.0.2.10");
+        fixture.Configuration.Save(previous);
+        var completion = new TaskCompletionSource<StatusRead>();
+        fixture.Client.Read = (_,_) => completion.Task;
+        var pairing = fixture.Coordinator.StartAsync();
+        fixture.Coordinator.Dispose();
+        completion.SetResult(Success());
+        await pairing;
+        Assert.Equal(previous, fixture.Configuration.Load());
+    }
     [Fact] public async Task UnreachableManualAddressFallsBackToDiscovery()
     {
         var fixture = new Fixture([Unit], "192.0.2.2");

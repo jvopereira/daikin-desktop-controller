@@ -47,7 +47,7 @@ public sealed class SetupCoordinator : IDisposable
         try
         {
             var key = secrets.Read();
-            configuration.Clear();
+            // Keep the last successful configuration until replacement pairing saves successfully.
             if (!Current(attempt)) return;
             if (key is null) { Set(new NeedsSecretKey()); return; }
             if (selection is not null)
