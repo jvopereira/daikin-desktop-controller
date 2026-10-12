@@ -108,15 +108,15 @@ The unit used to display Room Temperature and Target Temperature; the app uses d
 _Avoid_: Locale-dependent temperature unit
 
 **Turbo Mode**:
-A temporary high-output feature that prioritizes reaching the target temperature quickly.
+A temporary high-output feature that prioritizes reaching the target temperature quickly. Reported and written as `powerchill`; supported when its numeric or boolean field is reported. Enabling it clears Economy Mode.
 _Avoid_: Operating Mode, Powerful Mode (unless matching the device's reported label)
 
 **Comfort Mode**:
-An airflow feature that directs discharge air to reduce direct airflow onto occupants.
+An airflow feature that directs discharge air to reduce direct airflow onto occupants. Reported and written as `coanda`; supported when its numeric or boolean field is reported.
 _Avoid_: Operating Mode, Comfort setting
 
 **Economy Mode**:
-A feature that limits power consumption during operation.
+A feature that limits power consumption during operation. Reported and written as `econo`; supported when its numeric or boolean field is reported. Enabling it clears Turbo Mode.
 _Avoid_: Operating Mode, Energy-saving schedule
 
 ### Target Temperature Range

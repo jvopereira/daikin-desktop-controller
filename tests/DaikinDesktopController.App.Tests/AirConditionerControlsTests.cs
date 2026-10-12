@@ -68,6 +68,13 @@ public sealed class AirConditionerControlsTests
         using var f = new StatusMonitorTests.Fixture(); f.Monitor.Start();
         using var controls = new AirConditionerControls(f.Monitor);
         f.Secrets.Fail = true; await f.Monitor.RefreshAsync(); await controls.SetPower(false);
+        await controls.SetTurboMode(true); await controls.SetComfortMode(true); await controls.SetEconomyMode(true);
+        foreach (var feature in new[] { "Turbo", "Comfort", "Economy" })
+        {
+            Assert.False(FeatureValue(controls, feature).IsPending);
+            Assert.Null(FeatureValue(controls, feature).Error);
+            Assert.False(FeatureSupported(controls, feature));
+        }
         Assert.False(controls.CanControl); Assert.False(controls.Power.IsPending);
         Assert.Null(controls.Power.Error); Assert.Equal(0, f.Client.CommandCalls);
     }
@@ -149,5 +156,94 @@ public sealed class AirConditionerControlsTests
         f.Client.Read = _ => Task.FromResult(new StatusRead(StatusReadOutcome.Succeeded, Initial with { Mode = "99", Fan = "99" }));
         f.Monitor.Start(); using var controls = new AirConditionerControls(f.Monitor);
         Assert.Null(controls.OperatingMode.Value); Assert.Null(controls.FanSpeed.Value); Assert.False(controls.FanSpeedSupported);
+    }
+    private static AirConditionerStatus FeatureInitial => Initial with { TurboMode = false, ComfortMode = false, EconomyMode = false };
+    private static AirConditionerStatus FeatureStatus(string feature, bool value) => feature switch
+    {
+        "Turbo" => FeatureInitial with { TurboMode = value },
+        "Comfort" => FeatureInitial with { ComfortMode = value },
+        _ => FeatureInitial with { EconomyMode = value }
+    };
+    private static bool? StatusFeatureValue(AirConditionerStatus status, string feature) => feature switch
+    {
+        "Turbo" => status.TurboMode, "Comfort" => status.ComfortMode, _ => status.EconomyMode
+    };
+    private static Task ChangeFeature(AirConditionerControls controls, string feature, bool value) => feature switch
+    {
+        "Turbo" => controls.SetTurboMode(value), "Comfort" => controls.SetComfortMode(value), _ => controls.SetEconomyMode(value)
+    };
+    private static ControlValue<bool> FeatureValue(AirConditionerControls controls, string feature) => feature switch
+    {
+        "Turbo" => controls.TurboMode, "Comfort" => controls.ComfortMode, _ => controls.EconomyMode
+    };
+    private static bool FeatureSupported(AirConditionerControls controls, string feature) => feature switch
+    {
+        "Turbo" => controls.TurboModeSupported, "Comfort" => controls.ComfortModeSupported, _ => controls.EconomyModeSupported
+    };
+    [Theory] [InlineData("Turbo")] [InlineData("Comfort")] [InlineData("Economy")]
+    public async Task FeatureEqualAndMissingValuesSendNothing(string feature)
+    {
+        using var f = new StatusMonitorTests.Fixture(); var status = FeatureInitial;
+        f.Client.Read = _ => Task.FromResult(new StatusRead(StatusReadOutcome.Succeeded, status));
+        f.Monitor.Start(); using var controls = new AirConditionerControls(f.Monitor);
+        Assert.True(FeatureSupported(controls, feature));
+        await ChangeFeature(controls, feature, false);
+        Assert.Equal(0, f.Client.CommandCalls);
+        status = Initial; await f.Monitor.RefreshAsync();
+        Assert.False(FeatureSupported(controls, feature));
+        await ChangeFeature(controls, feature, true);
+        Assert.Equal(ControlError.Unsupported, FeatureValue(controls, feature).Error);
+        Assert.Equal(0, f.Client.CommandCalls);
+    }
+    [Theory] [InlineData("Turbo")] [InlineData("Comfort")] [InlineData("Economy")]
+    public async Task FeatureKeepNewerPendingIntent(string feature)
+    {
+        using var f = new StatusMonitorTests.Fixture(); var status = FeatureInitial;
+        f.Client.Read = _ => Task.FromResult(new StatusRead(StatusReadOutcome.Succeeded, status));
+        f.Monitor.Start(); using var controls = new AirConditionerControls(f.Monitor);
+        var first = new TaskCompletionSource<CommandResult>(); var second = new TaskCompletionSource<CommandResult>();
+        var entered = new TaskCompletionSource();
+        f.Client.Command = _ => { if (f.Client.CommandCalls == 1) return first.Task; entered.SetResult(); return second.Task; };
+        var a = ChangeFeature(controls, feature, true);
+        Assert.True(FeatureValue(controls, feature).IsPending);
+        Assert.True(FeatureValue(controls, feature).Value);
+        var b = ChangeFeature(controls, feature, false);
+        status = FeatureStatus(feature, true); first.SetResult(new(CommandOutcome.Confirmed, status));
+        await entered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.True(FeatureValue(controls, feature).IsPending);
+        Assert.False(FeatureValue(controls, feature).Value);
+        status = FeatureStatus(feature, false); second.SetResult(new(CommandOutcome.Confirmed, status));
+        await Task.WhenAll(a, b);
+        Assert.Equal(2, f.Client.CommandCalls); Assert.False(FeatureValue(controls, feature).IsPending); Assert.Null(FeatureValue(controls, feature).Error);
+    }
+    [Theory] [InlineData("Turbo", false)] [InlineData("Turbo", true)] [InlineData("Comfort", false)] [InlineData("Comfort", true)] [InlineData("Economy", false)] [InlineData("Economy", true)]
+    public async Task FeatureTimeoutRefreshesOnce(string feature, bool applied)
+    {
+        using var f = new StatusMonitorTests.Fixture(); var status = FeatureInitial;
+        f.Client.Read = _ => Task.FromResult(new StatusRead(StatusReadOutcome.Succeeded, status));
+        f.Monitor.Start(); using var controls = new AirConditionerControls(f.Monitor);
+        f.Client.Command = _ => { if (applied) status = FeatureStatus(feature, true); return Task.FromResult(new CommandResult(CommandOutcome.NoResponse)); };
+        await ChangeFeature(controls, feature, true);
+        Assert.Equal(1, f.Client.CommandCalls); Assert.Equal(2, f.Client.Calls);
+        Assert.False(FeatureValue(controls, feature).IsPending);
+        Assert.Equal(applied ? null : ControlError.NotApplied, FeatureValue(controls, feature).Error);
+        Assert.Equal(StatusFeatureValue(status, feature), FeatureValue(controls, feature).Value);
+    }
+    [Theory] [InlineData("Turbo")] [InlineData("Comfort")] [InlineData("Economy")]
+    public async Task FeatureRejectionRestoresConfirmedAndRetryClearsError(string feature)
+    {
+        using var f = new StatusMonitorTests.Fixture();
+        f.Client.Read = _ => Task.FromResult(new StatusRead(StatusReadOutcome.Succeeded, FeatureInitial));
+        f.Monitor.Start(); using var controls = new AirConditionerControls(f.Monitor);
+        f.Client.Command = _ => Task.FromResult(new CommandResult(CommandOutcome.NotApplied, FeatureInitial));
+        await ChangeFeature(controls, feature, true);
+        Assert.False(FeatureValue(controls, feature).Value);
+        Assert.Equal(ControlError.NotApplied, FeatureValue(controls, feature).Error);
+        var reply = new TaskCompletionSource<CommandResult>(); f.Client.Command = _ => reply.Task;
+        var retry = ChangeFeature(controls, feature, true);
+        Assert.True(FeatureValue(controls, feature).IsPending); Assert.Null(FeatureValue(controls, feature).Error);
+        f.Secrets.Fail = true; reply.SetResult(new(CommandOutcome.NoResponse)); await retry;
+        Assert.False(FeatureValue(controls, feature).IsPending); Assert.Null(FeatureValue(controls, feature).Error);
+        await ChangeFeature(controls, feature, true); Assert.Equal(2, f.Client.CommandCalls);
     }
 }

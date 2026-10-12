@@ -102,6 +102,24 @@ public class ProtocolTests
         Assert.True(new AirConditionerCommand.SetOperatingMode(OperatingMode.Auto).IsSatisfiedBy(new(false, "0", 24, null, null)));
         Assert.True(new AirConditionerCommand.SetFanSpeed(FanSpeed.Medium).IsSatisfiedBy(new(false, "3", 24, null, null, "5")));
     }
+    [Fact] public void FeatureCommandsWriteVendorPresets()
+    {
+        Assert.Equal("{\"port1\":{\"powerchill\":1,\"econo\":0}}BZ", Encoding.UTF8.GetString(new AirConditionerCommand.SetTurboMode(true).ToPlaintext()));
+        Assert.Equal("{\"port1\":{\"powerchill\":0}}BZ", Encoding.UTF8.GetString(new AirConditionerCommand.SetTurboMode(false).ToPlaintext()));
+        Assert.Equal("{\"port1\":{\"coanda\":1}}BZ", Encoding.UTF8.GetString(new AirConditionerCommand.SetComfortMode(true).ToPlaintext()));
+        Assert.Equal("{\"port1\":{\"coanda\":0}}BZ", Encoding.UTF8.GetString(new AirConditionerCommand.SetComfortMode(false).ToPlaintext()));
+        Assert.Equal("{\"port1\":{\"econo\":1,\"powerchill\":0}}BZ", Encoding.UTF8.GetString(new AirConditionerCommand.SetEconomyMode(true).ToPlaintext()));
+        Assert.Equal("{\"port1\":{\"econo\":0}}BZ", Encoding.UTF8.GetString(new AirConditionerCommand.SetEconomyMode(false).ToPlaintext()));
+    }
+    [Theory] [InlineData(null)] [InlineData(false)] [InlineData(true)]
+    public void FeatureSupportAndSatisfactionRequireReportedField(bool? reported)
+    {
+        var status = new AirConditionerStatus(false, "99", 24, null, null, null, reported, reported, reported);
+        AirConditionerCommand[] commands = [new AirConditionerCommand.SetTurboMode(true), new AirConditionerCommand.SetComfortMode(true), new AirConditionerCommand.SetEconomyMode(true)];
+        AirConditionerCommand[] offCommands = [new AirConditionerCommand.SetTurboMode(false), new AirConditionerCommand.SetComfortMode(false), new AirConditionerCommand.SetEconomyMode(false)];
+        foreach (var command in commands) { Assert.Equal(reported is not null, command.IsSupportedBy(status)); Assert.Equal(reported == true, command.IsSatisfiedBy(status)); }
+        foreach (var command in offCommands) { Assert.Equal(reported is not null, command.IsSupportedBy(status)); Assert.Equal(reported == false, command.IsSatisfiedBy(status)); }
+    }
     internal static byte[] Encrypt(byte[] plain, byte[] key, byte[] iv)
     {
         using var aes = Aes.Create(); aes.Key = key;
@@ -225,6 +243,26 @@ public class ClientTests
             .ReadStatusAsync(IPAddress.Loopback, ProtocolTests.Key);
         Assert.Equal(StatusReadOutcome.Succeeded, result.Outcome);
         Assert.Equal(fan == "17" ? "17" : null, result.Status!.Fan);
+        await server;
+    }
+    [Theory] [InlineData(null, null)] [InlineData("0", false)] [InlineData("-2", true)] [InlineData("0.5", true)] [InlineData("true", true)] [InlineData("false", false)] [InlineData("\"1\"", null)] [InlineData("null", null)] [InlineData("{}", null)] [InlineData("[]", null)]
+    public async Task OptionalFeaturesDoNotRejectStatus(string? flag, bool? expected)
+    {
+        var json = "{\"port1\":{\"power\":1,\"mode\":3,\"temperature\":24" + (flag is null ? "" : ",\"powerchill\":" + flag + ",\"coanda\":" + flag + ",\"econo\":" + flag) + "}}";
+        var body = ProtocolTests.Packet(json);
+        using var listener = new TcpListener(IPAddress.Loopback, 0); listener.Start();
+        var server = Task.Run(async () =>
+        {
+            using var peer = await listener.AcceptTcpClientAsync(); var stream = peer.GetStream();
+            Assert.True(await stream.ReadAsync(new byte[1024]) > 0);
+            await stream.WriteAsync(Encoding.ASCII.GetBytes($"HTTP/1.1 200 OK\r\nContent-Length: {body.Length}\r\n\r\n{body}"));
+        });
+        var result = await new LocalAirConditionerClient(((IPEndPoint)listener.LocalEndpoint).Port, TimeSpan.FromSeconds(2))
+            .ReadStatusAsync(IPAddress.Loopback, ProtocolTests.Key);
+        Assert.Equal(StatusReadOutcome.Succeeded, result.Outcome);
+        Assert.Equal(expected, result.Status!.TurboMode);
+        Assert.Equal(expected, result.Status.ComfortMode);
+        Assert.Equal(expected, result.Status.EconomyMode);
         await server;
     }
     [Fact] public async Task ClosedPortIsUnreachable()

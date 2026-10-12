@@ -53,6 +53,16 @@ public sealed class LocalAirConditionerClient : IAirConditionerClient
         catch (Exception e) when (e is SocketException or IOException) { return new(CommandOutcome.NoResponse); }
         catch (InvalidResponseException) { return new(CommandOutcome.UnexpectedResponse); }
     }
+    private static bool? Flag(JsonElement unit, string name)
+    {
+        if (!unit.TryGetProperty(name, out var value)) return null;
+        return value.ValueKind switch
+        {
+            JsonValueKind.True or JsonValueKind.False => value.GetBoolean(),
+            JsonValueKind.Number when value.TryGetDouble(out var number) => number != 0,
+            _ => null
+        };
+    }
     private static StatusRead ParseStatus(PacketDecode packet)
     {
             try
@@ -74,7 +84,7 @@ public sealed class LocalAirConditionerClient : IAirConditionerClient
                     && roomValue.TryGetDouble(out var measured)) room = measured;
                 var firmware = unit.TryGetProperty("fw_ver", out var fw) && fw.ValueKind == JsonValueKind.String ? fw.GetString() : null;
                 var fan = unit.TryGetProperty("fan", out var fanValue) && fanValue.ValueKind == JsonValueKind.Number ? fanValue.ToString() : null;
-                return new(StatusReadOutcome.Succeeded, new(isOn, mode.ToString(), target, room, firmware, fan));
+                return new(StatusReadOutcome.Succeeded, new(isOn, mode.ToString(), target, room, firmware, fan, Flag(unit, "powerchill"), Flag(unit, "coanda"), Flag(unit, "econo")));
             }
             catch (Exception e) when (e is JsonException or DecoderFallbackException) { return new(StatusReadOutcome.KeyRejected); }
             catch (InvalidOperationException) { return new(StatusReadOutcome.UnexpectedResponse); }

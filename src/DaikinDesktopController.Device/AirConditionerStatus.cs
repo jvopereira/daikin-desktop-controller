@@ -1,5 +1,5 @@
 namespace DaikinDesktopController.Device;
-public sealed record AirConditionerStatus(bool IsOn, string Mode, double TargetTemperature, double? RoomTemperature, string? FirmwareVersion, string? Fan = null)
+public sealed record AirConditionerStatus(bool IsOn, string Mode, double TargetTemperature, double? RoomTemperature, string? FirmwareVersion, string? Fan = null, bool? TurboMode = null, bool? ComfortMode = null, bool? EconomyMode = null)
 {
     public OperatingMode? OperatingMode => OperatingModeMapper.FromCode(Mode);
     public FanSpeed? FanSpeed => Fan is null ? null : FanSpeedMapper.FromCode(Fan);

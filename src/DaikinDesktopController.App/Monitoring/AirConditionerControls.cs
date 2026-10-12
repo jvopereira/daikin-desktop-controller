@@ -15,6 +15,9 @@ public sealed class AirConditionerControls : IDisposable
         public ControlValue<T> Value(T confirmed) => new(HasPending ? Pending! : confirmed, HasPending, Error);
         public void Reset() { Sequence++; Pending = default; HasPending = false; Error = null; }
     }
+    private readonly Slot<bool> turbo = new();
+    private readonly Slot<bool> comfort = new();
+    private readonly Slot<bool> economy = new();
     private readonly Slot<bool> power = new();
     private readonly Slot<double> temperature = new();
     private readonly Slot<OperatingMode?> mode = new();
@@ -24,6 +27,12 @@ public sealed class AirConditionerControls : IDisposable
     public ControlValue<double> TargetTemperature => temperature.Value(Confirmed?.TargetTemperature ?? 0);
     public ControlValue<OperatingMode?> OperatingMode => mode.Value(Confirmed?.OperatingMode);
     public ControlValue<FanSpeed?> FanSpeed => fan.Value(Confirmed?.FanSpeed);
+    public ControlValue<bool> TurboMode => turbo.Value(Confirmed?.TurboMode ?? false);
+    public bool TurboModeSupported => Confirmed?.TurboMode is not null;
+    public ControlValue<bool> ComfortMode => comfort.Value(Confirmed?.ComfortMode ?? false);
+    public bool ComfortModeSupported => Confirmed?.ComfortMode is not null;
+    public ControlValue<bool> EconomyMode => economy.Value(Confirmed?.EconomyMode ?? false);
+    public bool EconomyModeSupported => Confirmed?.EconomyMode is not null;
     public bool FanSpeedSupported => Confirmed is { } status && new AirConditionerCommand.SetFanSpeed(Device.FanSpeed.Auto).IsSupportedBy(status);
     public TargetTemperatureRange? TargetTemperatureRange => Confirmed?.TargetTemperatureRange;
     public bool CanControl => monitor.CanSendCommands;
@@ -33,10 +42,13 @@ public sealed class AirConditionerControls : IDisposable
     {
         if (monitor.State is ReadingStatus or Unavailable || !CanControl)
         {
-            power.Reset(); temperature.Reset(); mode.Reset(); fan.Reset();
+            power.Reset(); temperature.Reset(); mode.Reset(); fan.Reset(); turbo.Reset(); comfort.Reset(); economy.Reset();
         }
         Changed?.Invoke();
     }
+    public Task SetTurboMode(bool value) => SetAsync(turbo, TurboMode.Value, value, new AirConditionerCommand.SetTurboMode(value));
+    public Task SetComfortMode(bool value) => SetAsync(comfort, ComfortMode.Value, value, new AirConditionerCommand.SetComfortMode(value));
+    public Task SetEconomyMode(bool value) => SetAsync(economy, EconomyMode.Value, value, new AirConditionerCommand.SetEconomyMode(value));
     public Task SetPower(bool value) => SetAsync(power, Power.Value, value, new AirConditionerCommand.SetPower(value));
     public Task SetTargetTemperature(double value) => SetAsync(temperature, TargetTemperature.Value, value, new AirConditionerCommand.SetTargetTemperature(value));
     public Task SetOperatingMode(OperatingMode value) => SetAsync(mode, OperatingMode.Value, (OperatingMode?)value, new AirConditionerCommand.SetOperatingMode(value));
