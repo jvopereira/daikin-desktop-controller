@@ -13,7 +13,7 @@ public partial class GeneralSettingsView : UserControl
     {
         this.session = session;
         InitializeComponent();
-        Language.ItemsSource = Localizer.SupportedLanguages.Select(c => new ComboBoxItem
+        LanguageSelector.ItemsSource = Localizer.SupportedLanguages.Select(c => new ComboBoxItem
         { Content = Localizer.LanguageName(c), Tag = c.Name }).ToArray();
         Theme.ItemsSource = Enum.GetValues<ThemePreference>().Select(value =>
         {
@@ -31,14 +31,14 @@ public partial class GeneralSettingsView : UserControl
         loading = true;
         var current = session.Current;
         var culture = Localizer.ResolveCulture(current.Language, CultureInfo.InstalledUICulture);
-        Language.SelectedItem = Language.Items.Cast<ComboBoxItem>().First(i => (string)i.Tag == culture.Name);
+        LanguageSelector.SelectedItem = LanguageSelector.Items.Cast<ComboBoxItem>().First(i => (string)i.Tag == culture.Name);
         Theme.SelectedItem = Theme.Items.Cast<ComboBoxItem>().First(i => (ThemePreference)i.Tag == current.Theme);
         Launch.IsChecked = current.LaunchAtSignIn;
         loading = false;
     }
     private void LanguageChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (!loading && Language.SelectedItem is ComboBoxItem item)
+        if (!loading && LanguageSelector.SelectedItem is ComboBoxItem item)
             session.Update(p => p with { Language = (string)item.Tag });
     }
     private void ThemeChanged(object sender, SelectionChangedEventArgs e)

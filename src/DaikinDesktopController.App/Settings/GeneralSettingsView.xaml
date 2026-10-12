@@ -4,7 +4,7 @@
  xmlns:loc="clr-namespace:DaikinDesktopController.App.Localization">
 <StackPanel>
  <TextBlock Text="{Binding [AppLanguage], Source={x:Static loc:Localizer.Instance}}"/>
- <ComboBox x:Name="Language" Margin="0,8,0,24" SelectionChanged="LanguageChanged"
+ <ComboBox x:Name="LanguageSelector" Margin="0,8,0,24" SelectionChanged="LanguageChanged"
   AutomationProperties.Name="{Binding [AppLanguage], Source={x:Static loc:Localizer.Instance}}"/>
  <TextBlock Text="{Binding [ThemePreference], Source={x:Static loc:Localizer.Instance}}"/>
  <ComboBox x:Name="Theme" Margin="0,8,0,24" SelectionChanged="ThemeChanged"
