@@ -9,13 +9,26 @@ using DaikinDesktopController.App.Settings;
 using DaikinDesktopController.App.Preferences;
 using DaikinDesktopController.App.Startup;
 using DaikinDesktopController.App.Tray;
+using DaikinDesktopController.App.Secrets;
+using DaikinDesktopController.App.Setup;
+using DaikinDesktopController.Device;
+using DaikinDesktopController.Device.Discovery;
 using Forms = System.Windows.Forms;
 namespace DaikinDesktopController.App;
-public sealed class AppShell(Application application) : IDisposable
+public sealed class AppShell : IDisposable
 {
     private readonly SingleInstance instance = new();
     private readonly TrayClickGate clickGate = new(TimeProvider.System);
-    private readonly IAirConditionerConfigurationStore configuration = new NotConfiguredStore();
+    private readonly Application application;
+    private readonly ISecretStore secrets = new CredentialManagerSecretStore();
+    private readonly IAirConditionerConfigurationStore configuration;
+    private readonly SetupCoordinator coordinator;
+    public AppShell(Application application)
+    {
+        this.application = application;
+        configuration = new JsonAirConditionerConfigurationStore(JsonAirConditionerConfigurationStore.DefaultPath, secrets);
+        coordinator = new SetupCoordinator(new ZeroconfDeviceDiscovery(), new LocalAirConditionerClient(), secrets, configuration, preferences);
+    }
     private readonly PreferencesSession preferences = new(new JsonPreferencesStore(JsonPreferencesStore.DefaultPath));
     private readonly LaunchAtSignIn launch = new(new WindowsRunKey());
     private readonly string exePath = System.IO.Path.ChangeExtension(typeof(App).Assembly.Location, ".exe");
@@ -33,7 +46,11 @@ public sealed class AppShell(Application application) : IDisposable
         tray = new TrayIcon();
         tray.LeftClicked += (_, _) => TogglePanel();
         tray.ExitRequested += (_, _) => { tray.Dispose(); tray = null; application.Shutdown(); };
-        if (StartupDecision.ShouldOpenPanel(configuration)) ShowPanel();
+        if (coordinator.State is not Configured)
+        {
+            ShowPanel();
+            _ = coordinator.StartAsync();
+        }
     }
     private bool TryApplyLaunchAtSignIn(bool enabled)
     {
@@ -46,6 +63,18 @@ public sealed class AppShell(Application application) : IDisposable
     }
     private void PreferencesChanged(AppPreferences old, AppPreferences now)
     {
+        if (old.ManualIpAddress != now.ManualIpAddress)
+        {
+            try
+            {
+                if (secrets.Read() is not null) { ShowPanel(); _ = coordinator.StartAsync(); }
+            }
+            catch (System.ComponentModel.Win32Exception)
+            {
+                ShowPanel();
+                _ = coordinator.StartAsync();
+            }
+        }
         if (old.Language != now.Language)
             Localizer.Instance.SetCulture(Localizer.ResolveCulture(now.Language, CultureInfo.InstalledUICulture));
         if (old.Theme != now.Theme) ThemeApplier.Apply(now.Theme);
@@ -66,8 +95,9 @@ public sealed class AppShell(Application application) : IDisposable
     {
         if (panel is null)
         {
-            panel = new CompactControlPanel();
+            panel = new CompactControlPanel(coordinator);
             panel.SettingsRequested += (_, _) => OpenSettings();
+            panel.SectionRequested += section => OpenSettings(section);
             panel.Deactivated += (_, _) => { if (panel.IsVisible) { clickGate.RecordDismissal(); panel.Hide(); } };
         }
         var screen = Forms.Screen.FromPoint(Forms.Cursor.Position);
@@ -95,10 +125,15 @@ public sealed class AppShell(Application application) : IDisposable
         panel?.Hide();
         if (settings is null)
         {
-            settings = new SettingsWindow(preferences);
+            settings = new SettingsWindow(preferences, secrets);
+            settings.SecretKeySaved += async (_, _) =>
+            {
+                ShowPanel();
+                await coordinator.StartAsync();
+            };
             settings.Closed += (_, _) => settings = null;
         }
         settings.Show(section);
     }
-    public void Dispose() { preferences.Changed -= PreferencesChanged; tray?.Dispose(); instance.Dispose(); }
+    public void Dispose() { coordinator.Dispose(); preferences.Changed -= PreferencesChanged; tray?.Dispose(); instance.Dispose(); }
 }

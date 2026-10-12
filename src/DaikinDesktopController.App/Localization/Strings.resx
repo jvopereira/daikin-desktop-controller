@@ -1,3 +1,4 @@
+<?xml version='1.0' encoding='utf-8'?>
 <root>
   <resheader name="resmimetype">
     <value>text/microsoft-resx</value>
@@ -20,12 +21,6 @@
   <data name="Settings" xml:space="preserve">
     <value>Settings</value>
   </data>
-  <data name="FirstRunTitle" xml:space="preserve">
-    <value>Set up your Air Conditioner</value>
-  </data>
-  <data name="FirstRunMessage" xml:space="preserve">
-    <value>No Air Conditioner set up yet. Open Settings to add the Device Secret Key.</value>
-  </data>
   <data name="Secrets" xml:space="preserve">
     <value>Secrets</value>
   </data>
@@ -34,12 +29,6 @@
   </data>
   <data name="General" xml:space="preserve">
     <value>General</value>
-  </data>
-  <data name="SecretsPlaceholder" xml:space="preserve">
-    <value>Device Secret Key setup will be available here.</value>
-  </data>
-  <data name="DevicePlaceholder" xml:space="preserve">
-    <value>Air Conditioner discovery and connection will be available here.</value>
   </data>
   <data name="LanguageName" xml:space="preserve">
     <value>English</value>
@@ -64,5 +53,107 @@
   </data>
   <data name="LaunchAtSignInError" xml:space="preserve">
     <value>Launch at Sign-in could not be updated. Check your Windows permissions.</value>
+  </data>
+  <data name="DeviceSecretKey" xml:space="preserve">
+    <value>Device Secret Key</value>
+  </data>
+  <data name="RevealKey" xml:space="preserve">
+    <value>Reveal key</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="KeyAlreadySaved" xml:space="preserve">
+    <value>A Device Secret Key is already saved. Enter a new key to replace it.</value>
+  </data>
+  <data name="InvalidKey" xml:space="preserve">
+    <value>Enter a base64 key containing 16, 24, or 32 bytes.</value>
+  </data>
+  <data name="KeySaved" xml:space="preserve">
+    <value>Key saved. Pairing has started in the control panel.</value>
+  </data>
+  <data name="KeyStorageFailure" xml:space="preserve">
+    <value>Could not access Windows Credential Manager.</value>
+  </data>
+  <data name="DeviceIpAddress" xml:space="preserve">
+    <value>Device IP Address</value>
+  </data>
+  <data name="DeviceIpHelp" xml:space="preserve">
+    <value>Optional IPv4 address. Leave empty to discover automatically. If this address is unreachable, discovery runs instead.</value>
+  </data>
+  <data name="InvalidIp" xml:space="preserve">
+    <value>Enter a valid IPv4 address, or leave empty.</value>
+  </data>
+  <data name="DeviceIpSaved" xml:space="preserve">
+    <value>Device IP Address saved.</value>
+  </data>
+  <data name="PreferencesStorageFailure" xml:space="preserve">
+    <value>Could not save the setting. Try again.</value>
+  </data>
+  <data name="StatusRefreshPending" xml:space="preserve">
+    <value>Status Refresh Interval will be available with monitoring controls.</value>
+  </data>
+  <data name="OpenSecrets" xml:space="preserve">
+    <value>Open Secrets</value>
+  </data>
+  <data name="OpenDeviceSettings" xml:space="preserve">
+    <value>Open Device settings</value>
+  </data>
+  <data name="TryAgain" xml:space="preserve">
+    <value>Try again</value>
+  </data>
+  <data name="FirstRunTitle" xml:space="preserve">
+    <value>First-Run Setup</value>
+  </data>
+  <data name="FirstRunMessage" xml:space="preserve">
+    <value>Save your Device Secret Key in Secrets to find and pair your Air Conditioner.</value>
+  </data>
+  <data name="DiscoveringTitle" xml:space="preserve">
+    <value>Finding your Air Conditioner</value>
+  </data>
+  <data name="DiscoveringMessage" xml:space="preserve">
+    <value>Searching the local network…</value>
+  </data>
+  <data name="PairingTitle" xml:space="preserve">
+    <value>Pairing</value>
+  </data>
+  <data name="PairingMessage" xml:space="preserve">
+    <value>Reading status to verify the Device Secret Key…</value>
+  </data>
+  <data name="ChoosingTitle" xml:space="preserve">
+    <value>Choose an Air Conditioner</value>
+  </data>
+  <data name="ChoosingMessage" xml:space="preserve">
+    <value>Several units were found. Select the one to pair.</value>
+  </data>
+  <data name="ConfiguredTitle" xml:space="preserve">
+    <value>Configured</value>
+  </data>
+  <data name="ConfiguredMessage" xml:space="preserve">
+    <value>Your Air Conditioner is paired. Monitoring and controls are coming next.</value>
+  </data>
+  <data name="NotFoundTitle" xml:space="preserve">
+    <value>Air Conditioner not found</value>
+  </data>
+  <data name="NotFoundMessage" xml:space="preserve">
+    <value>Check the local network, or enter a Device IP Address in settings.</value>
+  </data>
+  <data name="KeyRejectedTitle" xml:space="preserve">
+    <value>Key rejected</value>
+  </data>
+  <data name="KeyRejectedMessage" xml:space="preserve">
+    <value>The status could not be decoded with this key. Check the Device Secret Key in Secrets.</value>
+  </data>
+  <data name="UnexpectedResponseTitle" xml:space="preserve">
+    <value>Unexpected response</value>
+  </data>
+  <data name="UnexpectedResponseMessage" xml:space="preserve">
+    <value>The Air Conditioner returned an unsupported response. Check Device settings and try again.</value>
+  </data>
+  <data name="StorageFailureTitle" xml:space="preserve">
+    <value>Could not save pairing</value>
+  </data>
+  <data name="StorageFailureMessage" xml:space="preserve">
+    <value>Check access to Windows Credential Manager and local application storage, then try again.</value>
   </data>
 </root>

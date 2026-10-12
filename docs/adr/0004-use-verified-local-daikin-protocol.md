@@ -2,7 +2,7 @@
 
 **Status:** Accepted
 
-The application will communicate with the target FTKP09S5VL through the reverse-engineered Daikin Smart AC local protocol, using the device secret key and local endpoint on port `15914`; it will not use Daikin cloud control as a fallback. This protocol was validated by successfully reading the target unit's status with the community Go implementation, while the discovery output's advertised port 80 was not the endpoint used for that read. The protocol is unofficial and firmware-sensitive, and control writes remain unverified on this unit. The .NET integration mechanism (native C# implementation versus a bundled Go component) remains an open decision and must be resolved before that component is implemented.
+The application will communicate with the target FTKP09S5VL through the reverse-engineered Daikin Smart AC local protocol, using the device secret key and local endpoint on port `15914`; it will not use Daikin cloud control as a fallback. This protocol was validated by successfully reading the target unit's status with the community Go implementation, while the discovery output's advertised port 80 was not the endpoint used for that read. The protocol is unofficial and firmware-sensitive, and control writes remain unverified on this unit. The integration mechanism is resolved by [ADR 0006](0006-implement-local-protocol-natively-in-csharp.md): native C# in a WPF-free device-control library.
 
 ## Consequences
 

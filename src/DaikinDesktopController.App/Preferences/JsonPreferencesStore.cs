@@ -1,30 +1,19 @@
 using System.IO;
-using System.Text.Json;
-using System.Text.Json.Serialization;
+using System.Net;
+using System.Net.Sockets;
+using DaikinDesktopController.App.Persistence;
 namespace DaikinDesktopController.App.Preferences;
 public sealed class JsonPreferencesStore(string path) : IPreferencesStore
 {
     public static string DefaultPath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DaikinDesktopController", "preferences.json");
-    private static readonly JsonSerializerOptions Options = new()
-    {
-        WriteIndented = true,
-        Converters = { new JsonStringEnumConverter(allowIntegerValues: false) }
-    };
+    public static bool IsIpv4(string? text) => text is not null && text.Split('.') is var parts && parts.Length == 4
+        && parts.All(part => part.Length is >= 1 and <= 3 && part.All(char.IsAsciiDigit))
+        && IPAddress.TryParse(text, out var address) && address.AddressFamily == AddressFamily.InterNetwork;
     public AppPreferences Load()
     {
-        try
-        {
-            var preferences = JsonSerializer.Deserialize<AppPreferences>(File.ReadAllText(path), Options);
-            return preferences is not null && Enum.IsDefined(preferences.Theme) ? preferences : new AppPreferences();
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.Security.SecurityException or JsonException)
-        { return new AppPreferences(); }
+        var preferences = JsonFile.Read<AppPreferences>(path);
+        if (preferences is null || !Enum.IsDefined(preferences.Theme)) return new();
+        return preferences with { ManualIpAddress = IsIpv4(preferences.ManualIpAddress) ? preferences.ManualIpAddress : null };
     }
-    public void Save(AppPreferences preferences)
-    {
-        Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
-        var temporaryPath = path + ".tmp";
-        File.WriteAllText(temporaryPath, JsonSerializer.Serialize(preferences, Options));
-        File.Move(temporaryPath, path, overwrite: true);
-    }
+    public void Save(AppPreferences preferences) => JsonFile.Write(path, preferences);
 }

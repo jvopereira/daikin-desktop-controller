@@ -1,3 +1,4 @@
+<?xml version='1.0' encoding='utf-8'?>
 <root>
   <resheader name="resmimetype">
     <value>text/microsoft-resx</value>
@@ -20,12 +21,6 @@
   <data name="Settings" xml:space="preserve">
     <value>Configurações</value>
   </data>
-  <data name="FirstRunTitle" xml:space="preserve">
-    <value>Configure seu ar-condicionado</value>
-  </data>
-  <data name="FirstRunMessage" xml:space="preserve">
-    <value>Nenhum ar-condicionado configurado. Abra as Configurações para adicionar a chave secreta do dispositivo.</value>
-  </data>
   <data name="Secrets" xml:space="preserve">
     <value>Segredos</value>
   </data>
@@ -34,12 +29,6 @@
   </data>
   <data name="General" xml:space="preserve">
     <value>Geral</value>
-  </data>
-  <data name="SecretsPlaceholder" xml:space="preserve">
-    <value>A configuração da chave secreta do dispositivo estará disponível aqui.</value>
-  </data>
-  <data name="DevicePlaceholder" xml:space="preserve">
-    <value>A descoberta e conexão do ar-condicionado estarão disponíveis aqui.</value>
   </data>
   <data name="LanguageName" xml:space="preserve">
     <value>Português (Brasil)</value>
@@ -64,5 +53,107 @@
   </data>
   <data name="LaunchAtSignInError" xml:space="preserve">
     <value>Não foi possível atualizar a inicialização ao entrar no Windows. Verifique suas permissões.</value>
+  </data>
+  <data name="DeviceSecretKey" xml:space="preserve">
+    <value>Chave secreta do dispositivo</value>
+  </data>
+  <data name="RevealKey" xml:space="preserve">
+    <value>Mostrar chave</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>Salvar</value>
+  </data>
+  <data name="KeyAlreadySaved" xml:space="preserve">
+    <value>Uma chave secreta já está salva. Insira uma nova chave para substituí-la.</value>
+  </data>
+  <data name="InvalidKey" xml:space="preserve">
+    <value>Insira uma chave base64 com 16, 24 ou 32 bytes.</value>
+  </data>
+  <data name="KeySaved" xml:space="preserve">
+    <value>Chave salva. O pareamento começou no painel de controle.</value>
+  </data>
+  <data name="KeyStorageFailure" xml:space="preserve">
+    <value>Não foi possível acessar o Gerenciador de Credenciais do Windows.</value>
+  </data>
+  <data name="DeviceIpAddress" xml:space="preserve">
+    <value>Endereço IP do dispositivo</value>
+  </data>
+  <data name="DeviceIpHelp" xml:space="preserve">
+    <value>Endereço IPv4 opcional. Deixe vazio para descobrir automaticamente. Se este endereço estiver inacessível, a descoberta será iniciada.</value>
+  </data>
+  <data name="InvalidIp" xml:space="preserve">
+    <value>Insira um endereço IPv4 válido ou deixe vazio.</value>
+  </data>
+  <data name="DeviceIpSaved" xml:space="preserve">
+    <value>Endereço IP do dispositivo salvo.</value>
+  </data>
+  <data name="PreferencesStorageFailure" xml:space="preserve">
+    <value>Não foi possível salvar a configuração. Tente novamente.</value>
+  </data>
+  <data name="StatusRefreshPending" xml:space="preserve">
+    <value>O intervalo de atualização do estado estará disponível com os controles de monitoramento.</value>
+  </data>
+  <data name="OpenSecrets" xml:space="preserve">
+    <value>Abrir Segredos</value>
+  </data>
+  <data name="OpenDeviceSettings" xml:space="preserve">
+    <value>Abrir configurações do Dispositivo</value>
+  </data>
+  <data name="TryAgain" xml:space="preserve">
+    <value>Tentar novamente</value>
+  </data>
+  <data name="FirstRunTitle" xml:space="preserve">
+    <value>Configuração inicial</value>
+  </data>
+  <data name="FirstRunMessage" xml:space="preserve">
+    <value>Salve sua chave secreta em Segredos para encontrar e parear seu ar-condicionado.</value>
+  </data>
+  <data name="DiscoveringTitle" xml:space="preserve">
+    <value>Buscando seu ar-condicionado</value>
+  </data>
+  <data name="DiscoveringMessage" xml:space="preserve">
+    <value>Buscando na rede local…</value>
+  </data>
+  <data name="PairingTitle" xml:space="preserve">
+    <value>Pareando</value>
+  </data>
+  <data name="PairingMessage" xml:space="preserve">
+    <value>Lendo o estado para verificar a chave secreta…</value>
+  </data>
+  <data name="ChoosingTitle" xml:space="preserve">
+    <value>Escolha um ar-condicionado</value>
+  </data>
+  <data name="ChoosingMessage" xml:space="preserve">
+    <value>Várias unidades foram encontradas. Selecione uma para parear.</value>
+  </data>
+  <data name="ConfiguredTitle" xml:space="preserve">
+    <value>Configurado</value>
+  </data>
+  <data name="ConfiguredMessage" xml:space="preserve">
+    <value>Seu ar-condicionado está pareado. Monitoramento e controles estarão disponíveis em breve.</value>
+  </data>
+  <data name="NotFoundTitle" xml:space="preserve">
+    <value>Ar-condicionado não encontrado</value>
+  </data>
+  <data name="NotFoundMessage" xml:space="preserve">
+    <value>Verifique a rede local ou insira o endereço IP do dispositivo nas configurações.</value>
+  </data>
+  <data name="KeyRejectedTitle" xml:space="preserve">
+    <value>Chave rejeitada</value>
+  </data>
+  <data name="KeyRejectedMessage" xml:space="preserve">
+    <value>Não foi possível decodificar o estado com esta chave. Verifique a chave secreta em Segredos.</value>
+  </data>
+  <data name="UnexpectedResponseTitle" xml:space="preserve">
+    <value>Resposta inesperada</value>
+  </data>
+  <data name="UnexpectedResponseMessage" xml:space="preserve">
+    <value>O ar-condicionado retornou uma resposta não suportada. Verifique as configurações do Dispositivo e tente novamente.</value>
+  </data>
+  <data name="StorageFailureTitle" xml:space="preserve">
+    <value>Não foi possível salvar o pareamento</value>
+  </data>
+  <data name="StorageFailureMessage" xml:space="preserve">
+    <value>Verifique o acesso ao Gerenciador de Credenciais do Windows e ao armazenamento local do aplicativo e tente novamente.</value>
   </data>
 </root>

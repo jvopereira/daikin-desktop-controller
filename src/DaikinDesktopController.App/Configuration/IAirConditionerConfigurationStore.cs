@@ -1,8 +1,11 @@
 namespace DaikinDesktopController.App.Configuration;
-public interface IAirConditionerConfigurationStore { bool HasConfiguredAirConditioner { get; } }
-public sealed class NotConfiguredStore : IAirConditionerConfigurationStore
+public sealed record AirConditionerConfiguration(string? Id, string IpAddress);
+public interface IAirConditionerConfigurationStore
 {
-    public bool HasConfiguredAirConditioner => false;
+    bool HasConfiguredAirConditioner { get; }
+    AirConditionerConfiguration? Load();
+    void Save(AirConditionerConfiguration configuration);
+    void Clear();
 }
 public static class StartupDecision
 {

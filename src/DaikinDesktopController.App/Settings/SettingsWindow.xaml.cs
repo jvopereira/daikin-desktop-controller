@@ -3,14 +3,21 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using DaikinDesktopController.App.Localization;
 using DaikinDesktopController.App.Preferences;
+using DaikinDesktopController.App.Secrets;
 namespace DaikinDesktopController.App.Settings;
 public partial class SettingsWindow : Window
 {
     private readonly GeneralSettingsView general;
-    public SettingsWindow(PreferencesSession preferences)
+    private readonly SecretsSettingsView secrets;
+    private readonly DeviceSettingsView device;
+    public event EventHandler? SecretKeySaved;
+    public SettingsWindow(PreferencesSession preferences, ISecretStore secretStore)
     {
         InitializeComponent();
         general = new GeneralSettingsView(preferences);
+        secrets = new SecretsSettingsView(secretStore);
+        device = new DeviceSettingsView(preferences);
+        secrets.SecretKeySaved += (_, _) => SecretKeySaved?.Invoke(this, EventArgs.Empty);
         Navigation.ItemsSource = Enum.GetValues<SettingsSection>().Select(section =>
         {
             var item = new ListBoxItem { Tag = section };
@@ -28,9 +35,12 @@ public partial class SettingsWindow : Window
     private void SectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (SectionContent is null || Navigation.SelectedItem is not ListBoxItem item) return;
-        if (item.Tag is SettingsSection.General) { SectionContent.Content = general; return; }
-        var placeholder = new TextBlock { FontSize = 16, TextWrapping = TextWrapping.Wrap };
-        placeholder.SetBinding(TextBlock.TextProperty, new Binding($"[{item.Tag}Placeholder]") { Source = Localizer.Instance });
-        SectionContent.Content = placeholder;
+        SectionContent.Content = item.Tag switch
+        {
+            SettingsSection.General => general,
+            SettingsSection.Secrets => secrets,
+            SettingsSection.Device => device,
+            _ => null
+        };
     }
 }

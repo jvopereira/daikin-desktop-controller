@@ -1,0 +1,12 @@
+using DaikinDesktopController.Device;
+namespace DaikinDesktopController.App.Setup;
+public abstract record SetupState;
+public sealed record NeedsSecretKey : SetupState;
+public sealed record Discovering : SetupState;
+public sealed record ChoosingAirConditioner(IReadOnlyList<DiscoveredAirConditioner> Candidates) : SetupState;
+public sealed record Pairing : SetupState;
+public sealed record Configured(AirConditionerStatus? Status = null) : SetupState;
+public sealed record NotFound : SetupState;
+public sealed record KeyRejected : SetupState;
+public sealed record UnexpectedResponse : SetupState;
+public sealed record StorageFailure : SetupState;
