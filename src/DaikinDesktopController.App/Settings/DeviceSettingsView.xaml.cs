@@ -10,10 +10,36 @@ namespace DaikinDesktopController.App.Settings;
 public partial class DeviceSettingsView : UserControl
 {
     private readonly PreferencesSession preferences;
+    private bool loading = true;
     public DeviceSettingsView(PreferencesSession preferences)
     {
         this.preferences = preferences;
-        InitializeComponent(); Address.Text = preferences.Current.ManualIpAddress ?? "";
+        InitializeComponent();
+        RefreshInterval.ItemsSource = AppPreferences.StatusRefreshIntervals.Select(seconds =>
+        {
+            var item = new ComboBoxItem { Tag = seconds };
+            item.SetBinding(ContentControl.ContentProperty, new Binding($"[StatusRefresh{seconds}]") { Source = Localizer.Instance });
+            return item;
+        }).ToArray();
+        Sync();
+        Loaded += (_, _) => { preferences.Changed += PreferencesChanged; Sync(); };
+        Unloaded += (_, _) => preferences.Changed -= PreferencesChanged;
+    }
+    private void PreferencesChanged(AppPreferences old, AppPreferences now) => Sync();
+    private void Sync()
+    {
+        loading = true;
+        Address.Text = preferences.Current.ManualIpAddress ?? "";
+        RefreshInterval.SelectedItem = RefreshInterval.Items.Cast<ComboBoxItem>()
+            .First(i => (int)i.Tag == preferences.Current.StatusRefreshIntervalSeconds);
+        loading = false;
+    }
+    private void IntervalChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (loading || RefreshInterval.SelectedItem is not ComboBoxItem item) return;
+        try { preferences.Update(p => p with { StatusRefreshIntervalSeconds = (int)item.Tag }); }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or System.Security.SecurityException)
+        { Sync(); Message("PreferencesStorageFailure"); }
     }
     private void Message(string key) => Feedback.SetBinding(TextBlock.TextProperty, new Binding($"[{key}]") { Source = Localizer.Instance });
     private void AddressKeyDown(object sender, KeyEventArgs e)

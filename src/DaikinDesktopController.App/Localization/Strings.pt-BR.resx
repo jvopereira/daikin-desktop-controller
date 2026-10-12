@@ -90,9 +90,6 @@
   <data name="PreferencesStorageFailure" xml:space="preserve">
     <value>Não foi possível salvar a configuração. Tente novamente.</value>
   </data>
-  <data name="StatusRefreshPending" xml:space="preserve">
-    <value>O intervalo de atualização do estado estará disponível com os controles de monitoramento.</value>
-  </data>
   <data name="OpenSecrets" xml:space="preserve">
     <value>Abrir Segredos</value>
   </data>
@@ -126,12 +123,6 @@
   <data name="ChoosingMessage" xml:space="preserve">
     <value>Várias unidades foram encontradas. Selecione uma para parear.</value>
   </data>
-  <data name="ConfiguredTitle" xml:space="preserve">
-    <value>Configurado</value>
-  </data>
-  <data name="ConfiguredMessage" xml:space="preserve">
-    <value>Seu ar-condicionado está pareado. Monitoramento e controles estarão disponíveis em breve.</value>
-  </data>
   <data name="NotFoundTitle" xml:space="preserve">
     <value>Ar-condicionado não encontrado</value>
   </data>
@@ -156,4 +147,19 @@
   <data name="StorageFailureMessage" xml:space="preserve">
     <value>Verifique o acesso ao Gerenciador de Credenciais do Windows e ao armazenamento local do aplicativo e tente novamente.</value>
   </data>
+  <data name="PowerOn" xml:space="preserve"><value>Ligado</value></data>
+  <data name="PowerOff" xml:space="preserve"><value>Desligado</value></data>
+  <data name="TargetTemperature" xml:space="preserve"><value>Temperatura desejada</value></data>
+  <data name="RoomTemperature" xml:space="preserve"><value>Temperatura ambiente</value></data>
+  <data name="ReadingStatusTitle" xml:space="preserve"><value>Lendo o estado do ar-condicionado</value></data>
+  <data name="ReadingStatusMessage" xml:space="preserve"><value>Obtendo o estado atual do seu ar-condicionado.</value></data>
+  <data name="UnavailableTitle" xml:space="preserve"><value>Ar-condicionado indisponível</value></data>
+  <data name="UnavailableUnreachableMessage" xml:space="preserve"><value>Não foi possível acessar seu ar-condicionado. Verifique a energia e a conexão de rede.</value></data>
+  <data name="UnavailableKeyRejectedMessage" xml:space="preserve"><value>Seu ar-condicionado rejeitou a chave secreta. Verifique a chave nas configurações.</value></data>
+  <data name="UnavailableReadErrorMessage" xml:space="preserve"><value>Não foi possível ler o estado atual do seu ar-condicionado. O aplicativo tentará novamente automaticamente.</value></data>
+  <data name="StatusRefreshInterval" xml:space="preserve"><value>Intervalo de atualização do estado</value></data>
+  <data name="StatusRefresh5" xml:space="preserve"><value>5 segundos</value></data>
+  <data name="StatusRefresh10" xml:space="preserve"><value>10 segundos</value></data>
+  <data name="StatusRefresh30" xml:space="preserve"><value>30 segundos</value></data>
+  <data name="StatusRefresh60" xml:space="preserve"><value>60 segundos</value></data>
 </root>

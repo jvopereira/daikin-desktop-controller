@@ -90,9 +90,6 @@
   <data name="PreferencesStorageFailure" xml:space="preserve">
     <value>Could not save the setting. Try again.</value>
   </data>
-  <data name="StatusRefreshPending" xml:space="preserve">
-    <value>Status Refresh Interval will be available with monitoring controls.</value>
-  </data>
   <data name="OpenSecrets" xml:space="preserve">
     <value>Open Secrets</value>
   </data>
@@ -126,12 +123,6 @@
   <data name="ChoosingMessage" xml:space="preserve">
     <value>Several units were found. Select the one to pair.</value>
   </data>
-  <data name="ConfiguredTitle" xml:space="preserve">
-    <value>Configured</value>
-  </data>
-  <data name="ConfiguredMessage" xml:space="preserve">
-    <value>Your Air Conditioner is paired. Monitoring and controls are coming next.</value>
-  </data>
   <data name="NotFoundTitle" xml:space="preserve">
     <value>Air Conditioner not found</value>
   </data>
@@ -156,4 +147,19 @@
   <data name="StorageFailureMessage" xml:space="preserve">
     <value>Check access to Windows Credential Manager and local application storage, then try again.</value>
   </data>
+  <data name="PowerOn" xml:space="preserve"><value>On</value></data>
+  <data name="PowerOff" xml:space="preserve"><value>Off</value></data>
+  <data name="TargetTemperature" xml:space="preserve"><value>Target Temperature</value></data>
+  <data name="RoomTemperature" xml:space="preserve"><value>Room Temperature</value></data>
+  <data name="ReadingStatusTitle" xml:space="preserve"><value>Reading Air Conditioner Status</value></data>
+  <data name="ReadingStatusMessage" xml:space="preserve"><value>Getting the current state of your Air Conditioner.</value></data>
+  <data name="UnavailableTitle" xml:space="preserve"><value>Air Conditioner Unavailable</value></data>
+  <data name="UnavailableUnreachableMessage" xml:space="preserve"><value>Unable to reach your Air Conditioner. Check its power and network connection.</value></data>
+  <data name="UnavailableKeyRejectedMessage" xml:space="preserve"><value>Your Air Conditioner rejected the Device Secret Key. Check the key in Settings.</value></data>
+  <data name="UnavailableReadErrorMessage" xml:space="preserve"><value>Unable to read the current state of your Air Conditioner. The app will try again automatically.</value></data>
+  <data name="StatusRefreshInterval" xml:space="preserve"><value>Status Refresh Interval</value></data>
+  <data name="StatusRefresh5" xml:space="preserve"><value>5 seconds</value></data>
+  <data name="StatusRefresh10" xml:space="preserve"><value>10 seconds</value></data>
+  <data name="StatusRefresh30" xml:space="preserve"><value>30 seconds</value></data>
+  <data name="StatusRefresh60" xml:space="preserve"><value>60 seconds</value></data>
 </root>
