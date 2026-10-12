@@ -120,7 +120,9 @@ A feature that limits power consumption during operation. Reported and written a
 _Avoid_: Operating Mode, Energy-saving schedule
 
 ### Target Temperature Range
+
 The supported minimum, maximum, and step derived from the reported Operating Mode using the vendor table. Dry, Fan, and unknown modes have no supported range.
 
 ### Pending Command
+
 A requested value shown immediately until confirmed or reconciled against refreshed device status. Each intent is sent once; older results cannot overwrite newer intent.
