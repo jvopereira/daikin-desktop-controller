@@ -52,19 +52,33 @@ public class ShellTests
     {
         var key = new RunKey();
         var launch = new LaunchAtSignIn(key);
-        launch.EnsureEnabledByDefault(@"C:\Program Files\Daikin\Daikin.exe");
-        launch.EnsureEnabledByDefault(@"C:\Program Files\Daikin\Daikin.exe");
+        launch.Apply(true, @"C:\Program Files\Daikin\Daikin.exe");
+        launch.Apply(true, @"C:\Program Files\Daikin\Daikin.exe");
         Assert.Equal(LaunchAtSignIn.ValueName, key.Name);
         Assert.Equal("\"C:\\Program Files\\Daikin\\Daikin.exe\"", key.Value);
         Assert.Equal(1,key.Writes);
-        launch.EnsureEnabledByDefault(@"D:\Daikin.exe");
+        launch.Apply(true, @"D:\Daikin.exe");
         Assert.Equal(2,key.Writes);
+    }
+    [Fact]
+    public void DisablingLaunchDeletesOnlyAnExistingValue()
+    {
+        var key = new RunKey();
+        var launch = new LaunchAtSignIn(key);
+        launch.Apply(false, "");
+        Assert.Equal(0, key.Deletes);
+        launch.Apply(true, @"C:\Daikin.exe");
+        launch.Apply(false, "");
+        launch.Apply(false, "");
+        Assert.Equal(1, key.Deletes);
+        Assert.Null(key.Value);
+        Assert.Equal(LaunchAtSignIn.ValueName, key.Name);
     }
     [Theory]
     [InlineData("")]
     [InlineData("bad\"path")]
     public void LaunchRegistrationRejectsInvalidPaths(string path) =>
-        Assert.Throws<ArgumentException>(() => new LaunchAtSignIn(new RunKey()).EnsureEnabledByDefault(path));
+        Assert.Throws<ArgumentException>(() => new LaunchAtSignIn(new RunKey()).Apply(true, path));
     [Theory]
     [InlineData("pt-PT", "pt-BR")]
     [InlineData("pt-BR", "pt-BR")]
@@ -103,6 +117,8 @@ public class ShellTests
         public string? Name { get; private set; }
         public string? Value { get; private set; }
         public int Writes { get; private set; }
+        public int Deletes { get; private set; }
+        public void Delete(string name) { Name = name; Value = null; Deletes++; }
         public string? Read(string name) => Value;
         public void Write(string name,string value) { Name=name; Value=value; Writes++; }
     }

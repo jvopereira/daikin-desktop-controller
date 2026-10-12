@@ -1,0 +1,14 @@
+<UserControl x:Class="DaikinDesktopController.App.Settings.GeneralSettingsView"
+ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+ xmlns:loc="clr-namespace:DaikinDesktopController.App.Localization">
+<StackPanel>
+ <TextBlock Text="{Binding [AppLanguage], Source={x:Static loc:Localizer.Instance}}"/>
+ <ComboBox x:Name="LanguageSelector" Margin="0,8,0,24" SelectionChanged="LanguageChanged"
+  AutomationProperties.Name="{Binding [AppLanguage], Source={x:Static loc:Localizer.Instance}}"/>
+ <TextBlock Text="{Binding [ThemePreference], Source={x:Static loc:Localizer.Instance}}"/>
+ <ComboBox x:Name="Theme" Margin="0,8,0,24" SelectionChanged="ThemeChanged"
+  AutomationProperties.Name="{Binding [ThemePreference], Source={x:Static loc:Localizer.Instance}}"/>
+ <CheckBox x:Name="Launch" Content="{Binding [LaunchAtSignIn], Source={x:Static loc:Localizer.Instance}}"
+  Checked="LaunchChanged" Unchecked="LaunchChanged"/>
+</StackPanel></UserControl>

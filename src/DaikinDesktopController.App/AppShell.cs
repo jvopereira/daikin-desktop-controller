@@ -6,6 +6,7 @@ using DaikinDesktopController.App.Configuration;
 using DaikinDesktopController.App.Localization;
 using DaikinDesktopController.App.Panel;
 using DaikinDesktopController.App.Settings;
+using DaikinDesktopController.App.Preferences;
 using DaikinDesktopController.App.Startup;
 using DaikinDesktopController.App.Tray;
 using Forms = System.Windows.Forms;
@@ -15,22 +16,46 @@ public sealed class AppShell(Application application) : IDisposable
     private readonly SingleInstance instance = new();
     private readonly TrayClickGate clickGate = new(TimeProvider.System);
     private readonly IAirConditionerConfigurationStore configuration = new NotConfiguredStore();
+    private readonly PreferencesSession preferences = new(new JsonPreferencesStore(JsonPreferencesStore.DefaultPath));
+    private readonly LaunchAtSignIn launch = new(new WindowsRunKey());
+    private readonly string exePath = System.IO.Path.ChangeExtension(typeof(App).Assembly.Location, ".exe");
     private TrayIcon? tray;
     private CompactControlPanel? panel;
     private SettingsWindow? settings;
     public void Start()
     {
         if (!instance.IsFirstInstance) { application.Shutdown(); return; }
-        Localizer.Instance.SetCulture(Localizer.SelectCulture(CultureInfo.InstalledUICulture));
-        try { new LaunchAtSignIn(new WindowsRunKey()).EnsureEnabledByDefault(System.IO.Path.ChangeExtension(typeof(App).Assembly.Location, ".exe")); }
-        catch (Exception e) when (e is UnauthorizedAccessException or System.Security.SecurityException or System.IO.IOException)
-        {
-            MessageBox.Show(Localizer.Instance["StartupRegistrationError"], Localizer.Instance["AppName"]);
-        }
+        var current = preferences.Current;
+        Localizer.Instance.SetCulture(Localizer.ResolveCulture(current.Language, CultureInfo.InstalledUICulture));
+        ThemeApplier.Apply(current.Theme);
+        TryApplyLaunchAtSignIn(current.LaunchAtSignIn);
+        preferences.Changed += PreferencesChanged;
         tray = new TrayIcon();
         tray.LeftClicked += (_, _) => TogglePanel();
         tray.ExitRequested += (_, _) => { tray.Dispose(); tray = null; application.Shutdown(); };
         if (StartupDecision.ShouldOpenPanel(configuration)) ShowPanel();
+    }
+    private bool TryApplyLaunchAtSignIn(bool enabled)
+    {
+        try { launch.Apply(enabled, exePath); return true; }
+        catch (Exception e) when (e is UnauthorizedAccessException or System.Security.SecurityException or System.IO.IOException)
+        {
+            MessageBox.Show(Localizer.Instance["LaunchAtSignInError"], Localizer.Instance["AppName"]);
+            return false;
+        }
+    }
+    private void PreferencesChanged(AppPreferences old, AppPreferences now)
+    {
+        if (old.Language != now.Language)
+            Localizer.Instance.SetCulture(Localizer.ResolveCulture(now.Language, CultureInfo.InstalledUICulture));
+        if (old.Theme != now.Theme) ThemeApplier.Apply(now.Theme);
+        if (old.LaunchAtSignIn != now.LaunchAtSignIn && !TryApplyLaunchAtSignIn(now.LaunchAtSignIn))
+        {
+            // Persist the previous choice without trying the failed registry change again.
+            preferences.Changed -= PreferencesChanged;
+            try { preferences.Update(p => p with { LaunchAtSignIn = old.LaunchAtSignIn }); }
+            finally { preferences.Changed += PreferencesChanged; }
+        }
     }
     private void TogglePanel()
     {
@@ -70,10 +95,10 @@ public sealed class AppShell(Application application) : IDisposable
         panel?.Hide();
         if (settings is null)
         {
-            settings = new SettingsWindow();
+            settings = new SettingsWindow(preferences);
             settings.Closed += (_, _) => settings = null;
         }
         settings.Show(section);
     }
-    public void Dispose() { tray?.Dispose(); instance.Dispose(); }
+    public void Dispose() { preferences.Changed -= PreferencesChanged; tray?.Dispose(); instance.Dispose(); }
 }
