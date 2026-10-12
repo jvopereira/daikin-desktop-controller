@@ -109,6 +109,9 @@ public partial class CompactControlPanel : Window
             FanSpeedError.Text = !controls.FanSpeedSupported || fan.Error == ControlError.Unsupported
                 ? Localizer.Instance["FanSpeedUnsupportedMessage"]
                 : fan.Error is null ? "" : Localizer.Instance["CommandNotAppliedMessage"];
+            RenderFeature(TurboToggle, TurboPending, TurboError, controls.TurboMode, controls.TurboModeSupported, "TurboModeUnsupportedMessage");
+            RenderFeature(ComfortToggle, ComfortPending, ComfortError, controls.ComfortMode, controls.ComfortModeSupported, "ComfortModeUnsupportedMessage");
+            RenderFeature(EconomyToggle, EconomyPending, EconomyError, controls.EconomyMode, controls.EconomyModeSupported, "EconomyModeUnsupportedMessage");
             var power = controls.Power;
             var temperature = controls.TargetTemperature;
             Bind(Power, TextBlock.TextProperty, power.Value ? "PowerOn" : "PowerOff");
@@ -136,6 +139,16 @@ public partial class CompactControlPanel : Window
         }
         finally { rendering = false; }
     }
+    private void RenderFeature(System.Windows.Controls.Primitives.ToggleButton toggle, TextBlock pending, TextBlock error,
+        ControlValue<bool> value, bool supported, string unsupportedMessage)
+    {
+        Bind(toggle, ContentControl.ContentProperty, value.Value ? "TurnOff" : "TurnOn");
+        toggle.IsChecked = value.Value;
+        toggle.IsEnabled = controls.CanControl && supported;
+        pending.Visibility = value.IsPending ? Visibility.Visible : Visibility.Collapsed;
+        error.Text = !supported || value.Error == ControlError.Unsupported ? Localizer.Instance[unsupportedMessage]
+            : value.Error == ControlError.NotApplied ? Localizer.Instance["CommandNotAppliedMessage"] : "";
+    }
     private sealed record ControlOption<T>(T Value, string Label);
     private async void ChangeOperatingMode(object sender, SelectionChangedEventArgs e)
     {
@@ -147,6 +160,9 @@ public partial class CompactControlPanel : Window
         if (!rendering && FanSpeedSelector.SelectedItem is ControlOption<FanSpeed> option)
             await controls.SetFanSpeed(option.Value);
     }
+    private async void ChangeTurboMode(object sender, RoutedEventArgs e) => await controls.SetTurboMode(!controls.TurboMode.Value);
+    private async void ChangeComfortMode(object sender, RoutedEventArgs e) => await controls.SetComfortMode(!controls.ComfortMode.Value);
+    private async void ChangeEconomyMode(object sender, RoutedEventArgs e) => await controls.SetEconomyMode(!controls.EconomyMode.Value);
     private async void ChangePower(object sender, RoutedEventArgs e) => await controls.SetPower(!controls.Power.Value);
     private async void DecreaseTemperature(object sender, RoutedEventArgs e) => await controls.StepTargetTemperature(-1);
     private async void IncreaseTemperature(object sender, RoutedEventArgs e) => await controls.StepTargetTemperature(1);

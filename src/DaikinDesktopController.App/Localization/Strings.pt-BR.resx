@@ -185,4 +185,10 @@
   <data name="FanSpeedMediumHigh" xml:space="preserve"><value>Média-alta</value></data>
   <data name="FanSpeedHigh" xml:space="preserve"><value>Alta</value></data>
   <data name="FanSpeedUnsupportedMessage" xml:space="preserve"><value>A velocidade do ventilador está indisponível no modo Desumidificar ou em modos desconhecidos, ou quando o ar-condicionado não informa uma velocidade compatível.</value></data>
+  <data name="TurboMode" xml:space="preserve"><value>Modo turbo</value></data>
+  <data name="TurboModeUnsupportedMessage" xml:space="preserve"><value>Este ar-condicionado não informa o modo turbo.</value></data>
+  <data name="ComfortMode" xml:space="preserve"><value>Modo conforto</value></data>
+  <data name="ComfortModeUnsupportedMessage" xml:space="preserve"><value>Este ar-condicionado não informa o modo conforto.</value></data>
+  <data name="EconomyMode" xml:space="preserve"><value>Modo econômico</value></data>
+  <data name="EconomyModeUnsupportedMessage" xml:space="preserve"><value>Este ar-condicionado não informa o modo econômico.</value></data>
 </root>

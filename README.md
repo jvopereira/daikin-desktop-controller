@@ -62,3 +62,14 @@ Writes require real-device verification per ADR 0004.
 4. Switch to Fan or Dry in the official app; temperature is disabled with an explanation.
 5. Disconnect the network mid-command; the app refreshes without resending, then shows Unavailable with controls disabled.
 6. Check English and Brazilian Portuguese, pending hints, and rejection errors.
+
+## Turbo, Comfort and Economy verification on Windows
+
+Writes require real-device verification per ADR 0004.
+
+1. Turn each feature on and off; confirm the unit and panel agree, with Pending shown immediately and then cleared after confirmation.
+2. Enable Turbo while Economy is on and verify Economy turns off. Enable Economy while Turbo is on and verify Turbo turns off. Comfort remains independent.
+3. Test a status with a feature field absent or invalid: its toggle is disabled with a “not reported” explanation while the remaining status is displayed.
+4. Disconnect the network mid-command: verify a status refresh without resend, followed by Unavailable when the unit cannot be reached. Reconnect and retry manually.
+5. Verify a refused command restores the confirmed value with an error and a manual retry clears the error while pending.
+6. Switch App Language to Brazilian Portuguese and verify labels, pending hints, unsupported explanations, and rejection errors update.

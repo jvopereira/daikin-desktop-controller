@@ -17,6 +17,18 @@
 <ComboBox x:Name="FanSpeedSelector" DisplayMemberPath="Label" SelectedValuePath="Value" SelectionChanged="ChangeFanSpeed" AutomationProperties.Name="{Binding [FanSpeed], Source={x:Static loc:Localizer.Instance}}" Margin="0,8,0,0"/>
 <TextBlock x:Name="FanSpeedPending" Text="{Binding [Pending], Source={x:Static loc:Localizer.Instance}}"/>
 <TextBlock x:Name="FanSpeedError" TextWrapping="Wrap" Foreground="{DynamicResource SystemFillColorCriticalBrush}"/>
+<TextBlock Text="{Binding [TurboMode], Source={x:Static loc:Localizer.Instance}}" Margin="0,16,0,0"/>
+<ToggleButton x:Name="TurboToggle" Click="ChangeTurboMode" AutomationProperties.Name="{Binding [TurboMode], Source={x:Static loc:Localizer.Instance}}" Margin="0,8,0,0"/>
+<TextBlock x:Name="TurboPending" Text="{Binding [Pending], Source={x:Static loc:Localizer.Instance}}"/>
+<TextBlock x:Name="TurboError" TextWrapping="Wrap" Foreground="{DynamicResource SystemFillColorCriticalBrush}"/>
+<TextBlock Text="{Binding [ComfortMode], Source={x:Static loc:Localizer.Instance}}" Margin="0,16,0,0"/>
+<ToggleButton x:Name="ComfortToggle" Click="ChangeComfortMode" AutomationProperties.Name="{Binding [ComfortMode], Source={x:Static loc:Localizer.Instance}}" Margin="0,8,0,0"/>
+<TextBlock x:Name="ComfortPending" Text="{Binding [Pending], Source={x:Static loc:Localizer.Instance}}"/>
+<TextBlock x:Name="ComfortError" TextWrapping="Wrap" Foreground="{DynamicResource SystemFillColorCriticalBrush}"/>
+<TextBlock Text="{Binding [EconomyMode], Source={x:Static loc:Localizer.Instance}}" Margin="0,16,0,0"/>
+<ToggleButton x:Name="EconomyToggle" Click="ChangeEconomyMode" AutomationProperties.Name="{Binding [EconomyMode], Source={x:Static loc:Localizer.Instance}}" Margin="0,8,0,0"/>
+<TextBlock x:Name="EconomyPending" Text="{Binding [Pending], Source={x:Static loc:Localizer.Instance}}"/>
+<TextBlock x:Name="EconomyError" TextWrapping="Wrap" Foreground="{DynamicResource SystemFillColorCriticalBrush}"/>
 <TextBlock Text="{Binding [TargetTemperature], Source={x:Static loc:Localizer.Instance}}" Margin="0,16,0,0"/>
 <StackPanel Orientation="Horizontal">
 <Button x:Name="Decrease" Content="−" Click="DecreaseTemperature" AutomationProperties.Name="{Binding [DecreaseTargetTemperature], Source={x:Static loc:Localizer.Instance}}" Padding="12"/>
