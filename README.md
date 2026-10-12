@@ -1,85 +1,74 @@
 # Daikin Desktop Controller
 
-Tray-first Windows shell for local Air Conditioner control. First-Run Setup discovers and pairs a local Air Conditioner. Configured launches start in the tray. While the Compact Control Panel is visible, it shows current power and temperatures and refreshes at the chosen Status Refresh Interval. Power and target temperature controls show pending requests and reconcile against device status without automatic resend.
+[![Windows CI](https://github.com/jvopereira/daikin-desktop-controller/actions/workflows/ci.yml/badge.svg)](https://github.com/jvopereira/daikin-desktop-controller/actions/workflows/ci.yml)
+[![Latest release](https://img.shields.io/github/v/release/jvopereira/daikin-desktop-controller?display_name=tag&sort=semver)](https://github.com/jvopereira/daikin-desktop-controller/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-## Build and run
+Control a compatible Daikin air conditioner from a lightweight Windows system-tray app. The controller communicates with the unit over your local network and keeps everyday controls in a compact panel.
 
-Requires Windows 10 or 11 and the .NET 10 SDK.
+![Daikin Desktop Controller showing the compact control panel](docs/images/control-panel.png)
+
+## Features
+
+- Discover and pair with compatible air conditioners on your local network, or configure an address manually.
+- Control power, target temperature, operating mode, fan speed, Turbo, Comfort, and Economy when the unit reports support.
+- See connection status and have the panel reconcile pending commands with the device's reported state.
+- Choose English or Brazilian Portuguese, and Light, Dark, or System appearance.
+- Keep the app in the system tray, launch it at sign-in, and store the device secret in Windows Credential Manager.
+- Keep control traffic local; the app does not depend on a cloud service.
+
+> Compatibility depends on the air conditioner model, firmware, and local-network configuration. The app is an independent community project and is not affiliated with or endorsed by Daikin.
+
+## Requirements
+
+- Windows 10 or 11
+- .NET 10 SDK to build from source
+- A compatible Daikin air conditioner reachable on the same local network
+- The device secret key required by the air conditioner
+
+## Get started
+
+### Install on Windows
+
+1. Open [Releases](https://github.com/jvopereira/daikin-desktop-controller/releases).
+2. Open the latest version and download its Windows installer from **Assets**.
+3. Run the downloaded installer and follow the on-screen steps.
+4. Open **Daikin Desktop Controller** from the Start menu. On first launch, enter your device secret key and select your air conditioner.
+
+After setup, the app stays in the system tray. Select its tray icon whenever you want to open the control panel.
+
+The device key is stored in Windows Credential Manager. Network discovery and control require the computer and air conditioner to be able to communicate on the local network.
+
+## Build from source
+
+To build the app yourself, install the .NET 10 SDK and run these commands in PowerShell from the repository root:
 
 ```powershell
 dotnet restore
-dotnet build -c Release
-dotnet test -c Release
+dotnet build -c Release --no-restore
+dotnet test -c Release --no-build
 dotnet run --project src/DaikinDesktopController.App
 ```
 
-Sign-in registration points to the application executable beside its assembly, including when launched through `dotnet run`. The application enables Launch at Sign-in on each start under `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` with value name `DaikinDesktopController`. Preferences are saved automatically. To remove this registration after uninstalling, delete that value in Registry Editor.
+The WPF desktop app and its UI tests require Windows. Device protocol tests target plain .NET and can also run on macOS or Linux:
 
-## Windows manual verification
+```sh
+dotnet test tests/DaikinDesktopController.Device.Tests
+```
 
-- Launch: one Tray Icon and a borderless Compact Control Panel near the tray.
-- Click the desktop: panel hides. Left-click the Tray Icon: panel reopens. Click it while open: panel closes without reopening.
-- Right-click the Tray Icon: only Exit appears. Exit removes the icon and ends the process.
-- Open Settings: a standard window with Secrets, Device, General in order. Reopen Settings: the same window activates. Closing Settings leaves the app Running in the Tray.
-- Press Alt+F4 in the panel: it hides and the app continues running.
-- Start a second process: no second Tray Icon appears.
-- Check the Run registry entry and sign out/in to verify Launch at Sign-in.
-- Test Brazilian Portuguese, English, and an unsupported Windows display language (falls back to Brazilian Portuguese).
-- Test each taskbar edge, auto-hide, and multiple monitors with different scaling.
+## Contributing
 
-Windows CI builds the WPF application and runs the logic tests. WPF cannot run on macOS.
+Contributions are welcome. For a significant behavior or UI change, open an issue first to discuss the approach. For smaller fixes, open a pull request with a concise description, the user-visible impact, and the checks you ran. Please do not include device keys, credentials, or private network details in issues, screenshots, or logs.
 
-## Pairing verification on Windows
+Before opening a pull request:
 
-1. Launch without configuration and open Secrets from First-Run Setup.
-2. Enter a valid Device Secret Key, test reveal/hide, and Save. Verify discovery progress, automatic pairing for one unit, and selection for several units.
-3. Relaunch and verify tray-only startup and the `DaikinDesktopController/DeviceSecretKey` credential in Windows Credential Manager.
-4. Save an incorrect key and verify Key rejected with the Secrets shortcut.
-5. Enter a manual IPv4 address in Device settings. Verify direct pairing, discovery fallback for an unreachable address, and Not found when disconnected.
-6. Switch between English and Brazilian Portuguese in each setup state and verify live text updates.
+1. Keep changes focused and follow the existing C# conventions and nullable/warnings-as-errors settings.
+2. Run `dotnet build -c Release` and the relevant tests on Windows; run device protocol tests on other platforms when applicable.
+3. Run `npx --yes markdownlint-cli2 "**/*.md"` and `lychee --no-progress README.md` when changing documentation.
+4. Update user-facing documentation when behavior or setup changes.
 
-Real-device pairing and Credential Manager require Windows and the target LAN.
+Every pull request should explain what changed, why it is useful, how it was verified, and include screenshots for visible UI changes.
 
-Device-control tests target plain .NET 10 and can also run on macOS with `dotnet test tests/DaikinDesktopController.Device.Tests`. App tests and UI verification require Windows.
+## License
 
-## Status monitoring verification on Windows
-
-1. Open a configured panel from the Tray Icon and verify an immediate status read.
-2. Change Status Refresh Interval in Settings → Device to 5, 10, 30, or 60 seconds.
-3. Disconnect the Air Conditioner and verify Air Conditioner Unavailable appears after one retry, with saved configuration retained.
-4. Reconnect and verify automatic recovery while the panel stays open.
-5. Switch App Language and verify decimal temperatures use a comma in Brazilian Portuguese.
-6. Hide the panel via desktop click, Settings, or Alt+F4 and verify status reads stop; reopening reads immediately.
-7. Verify unavailable states appear in the panel without Windows notifications.
-
-## Power and temperature verification on Windows
-
-Writes require real-device verification per ADR 0004.
-
-1. Toggle power and confirm the unit and panel agree.
-2. Click + and − rapidly; each click sends one command and the final value sticks.
-3. Drag the slider; one command is sent on release. Test keyboard and track clicks too.
-4. Switch to Fan or Dry in the official app; temperature is disabled with an explanation.
-5. Disconnect the network mid-command; the app refreshes without resending, then shows Unavailable with controls disabled.
-6. Check English and Brazilian Portuguese, pending hints, and rejection errors.
-
-## Turbo, Comfort and Economy verification on Windows
-
-Writes require real-device verification per ADR 0004.
-
-1. Turn each feature on and off; confirm the unit and panel agree, with Pending shown immediately and then cleared after confirmation.
-2. Enable Turbo while Economy is on and verify Economy turns off. Enable Economy while Turbo is on and verify Turbo turns off. Comfort remains independent.
-3. Test a status with a feature field absent or invalid: its toggle is disabled with a “not reported” explanation while the remaining status is displayed.
-4. Disconnect the network mid-command: verify a status refresh without resend, followed by Unavailable when the unit cannot be reached. Reconnect and retry manually.
-5. Verify a refused command restores the confirmed value with an error and a manual retry clears the error while pending.
-6. Switch App Language to Brazilian Portuguese and verify labels, pending hints, unsupported explanations, and rejection errors update.
-
-## Compact Control Panel visuals verification on Windows
-
-1. Open the panel from the tray in Light, Dark and System themes; the card, tiles, slider and illustration stay readable in each.
-2. Toggle power: the illustration flap and LED animate, airflow wisps loop while on, and the power button glows.
-3. Turn off Windows animation effects; the panel opens and updates without motion.
-4. Open the Mode and Fan speed tiles with the mouse and with the keyboard (Tab, Alt+Down, arrows, Enter).
-5. Hover disabled tiles to see unsupported explanations; check the footer shows Updating…, Connected and errors.
-6. Switch to Brazilian Portuguese and verify tile text fits.
-7. Check the tray icon at 100%, 150% and 200% scale on light and dark taskbars.
+This project is licensed under the [MIT License](LICENSE).

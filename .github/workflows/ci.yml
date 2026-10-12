@@ -13,3 +13,21 @@ jobs:
       - run: dotnet restore
       - run: dotnet build -c Release --no-restore
       - run: dotnet test -c Release --no-build --logger trx
+  documentation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Lint Markdown
+        run: npx --yes markdownlint-cli2 "**/*.md"
+      - name: Check links
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: --no-progress --verbose README.md
+      - name: Check spelling and style
+        uses: errata-ai/vale-action@v2.1.1
+        with:
+          files: README.md
+          vale_flags: --minAlertLevel=warning
