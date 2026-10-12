@@ -13,7 +13,8 @@ public sealed class JsonPreferencesStore(string path) : IPreferencesStore
     {
         var preferences = JsonFile.Read<AppPreferences>(path);
         if (preferences is null || !Enum.IsDefined(preferences.Theme)) return new();
-        return preferences with { ManualIpAddress = IsIpv4(preferences.ManualIpAddress) ? preferences.ManualIpAddress : null };
+        return preferences with { ManualIpAddress = IsIpv4(preferences.ManualIpAddress) ? preferences.ManualIpAddress : null,
+            StatusRefreshIntervalSeconds = AppPreferences.StatusRefreshIntervals.Contains(preferences.StatusRefreshIntervalSeconds) ? preferences.StatusRefreshIntervalSeconds : 10 };
     }
     public void Save(AppPreferences preferences) => JsonFile.Write(path, preferences);
 }

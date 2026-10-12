@@ -13,6 +13,7 @@ using DaikinDesktopController.App.Secrets;
 using DaikinDesktopController.App.Setup;
 using DaikinDesktopController.Device;
 using DaikinDesktopController.Device.Discovery;
+using DaikinDesktopController.App.Monitoring;
 using Forms = System.Windows.Forms;
 namespace DaikinDesktopController.App;
 public sealed class AppShell : IDisposable
@@ -23,11 +24,14 @@ public sealed class AppShell : IDisposable
     private readonly ISecretStore secrets = new CredentialManagerSecretStore();
     private readonly IAirConditionerConfigurationStore configuration;
     private readonly SetupCoordinator coordinator;
+    private readonly StatusMonitor monitor;
     public AppShell(Application application)
     {
         this.application = application;
         configuration = new JsonAirConditionerConfigurationStore(JsonAirConditionerConfigurationStore.DefaultPath, secrets);
-        coordinator = new SetupCoordinator(new ZeroconfDeviceDiscovery(), new LocalAirConditionerClient(), secrets, configuration, preferences);
+        var client = new LocalAirConditionerClient();
+        coordinator = new SetupCoordinator(new ZeroconfDeviceDiscovery(), client, secrets, configuration, preferences);
+        monitor = new StatusMonitor(client, secrets, configuration, preferences, TimeProvider.System);
     }
     private readonly PreferencesSession preferences = new(new JsonPreferencesStore(JsonPreferencesStore.DefaultPath));
     private readonly LaunchAtSignIn launch = new(new WindowsRunKey());
@@ -95,7 +99,7 @@ public sealed class AppShell : IDisposable
     {
         if (panel is null)
         {
-            panel = new CompactControlPanel(coordinator);
+            panel = new CompactControlPanel(coordinator, monitor);
             panel.SettingsRequested += (_, _) => OpenSettings();
             panel.SectionRequested += section => OpenSettings(section);
             panel.Deactivated += (_, _) => { if (panel.IsVisible) { clickGate.RecordDismissal(); panel.Hide(); } };
@@ -135,5 +139,5 @@ public sealed class AppShell : IDisposable
         }
         settings.Show(section);
     }
-    public void Dispose() { coordinator.Dispose(); preferences.Changed -= PreferencesChanged; tray?.Dispose(); instance.Dispose(); }
+    public void Dispose() { monitor.Dispose(); coordinator.Dispose(); preferences.Changed -= PreferencesChanged; tray?.Dispose(); instance.Dispose(); }
 }

@@ -1,6 +1,6 @@
 # Daikin Desktop Controller
 
-Tray-first Windows shell for local Air Conditioner control. First-Run Setup discovers and pairs a local Air Conditioner. Configured launches start in the tray; controls arrive in issue #4.
+Tray-first Windows shell for local Air Conditioner control. First-Run Setup discovers and pairs a local Air Conditioner. Configured launches start in the tray. While the Compact Control Panel is visible, it shows current power and temperatures and refreshes at the chosen Status Refresh Interval. Power and temperature controls arrive in issue #5.
 
 ## Build and run
 
@@ -41,3 +41,13 @@ Windows CI builds the WPF application and runs the logic tests. WPF cannot run o
 Real-device pairing and Credential Manager require Windows and the target LAN.
 
 Device-control tests target plain .NET 10 and can also run on macOS with `dotnet test tests/DaikinDesktopController.Device.Tests`. App tests and UI verification require Windows.
+
+## Status monitoring verification on Windows
+
+1. Open a configured panel from the Tray Icon and verify an immediate status read.
+2. Change Status Refresh Interval in Settings → Device to 5, 10, 30, or 60 seconds.
+3. Disconnect the Air Conditioner and verify Air Conditioner Unavailable appears after one retry, with saved configuration retained.
+4. Reconnect and verify automatic recovery while the panel stays open.
+5. Switch App Language and verify decimal temperatures use a comma in Brazilian Portuguese.
+6. Hide the panel via desktop click, Settings, or Alt+F4 and verify status reads stop; reopening reads immediately.
+7. Verify unavailable states appear in the panel without Windows notifications.

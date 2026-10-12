@@ -99,6 +99,28 @@ public sealed class PreferencesTests : IDisposable
     {
         if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
     }
+    [Theory]
+    [InlineData(5)] [InlineData(10)] [InlineData(30)] [InlineData(60)]
+    public void StatusRefreshIntervalRoundTrips(int seconds)
+    {
+        var store = new JsonPreferencesStore(PreferencesPath);
+        var expected = new AppPreferences("en", ThemePreference.Dark, false, "192.0.2.1", seconds);
+        store.Save(expected); Assert.Equal(expected, store.Load());
+    }
+    [Theory]
+    [InlineData(0)] [InlineData(7)] [InlineData(-5)]
+    public void InvalidIntervalFallsBackWithoutLosingOtherFields(int seconds)
+    {
+        var store = new JsonPreferencesStore(PreferencesPath);
+        var saved = new AppPreferences("en", ThemePreference.Dark, false, "192.0.2.1", seconds);
+        store.Save(saved); Assert.Equal(saved with { StatusRefreshIntervalSeconds = 10 }, store.Load());
+    }
+    [Fact] public void MissingIntervalDefaultsToTenSeconds()
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(PreferencesPath)!);
+        File.WriteAllText(PreferencesPath, "{\"Language\":\"en\",\"LaunchAtSignIn\":false}");
+        Assert.Equal(new AppPreferences("en", LaunchAtSignIn: false), new JsonPreferencesStore(PreferencesPath).Load());
+    }
     private sealed class Store : IPreferencesStore
     {
         public AppPreferences Value { get; set; } = new();

@@ -4,5 +4,6 @@
 <TextBox x:Name="Address" Margin="0,8,0,12" LostFocus="CommitAddress" KeyDown="AddressKeyDown" AutomationProperties.Name="{Binding [DeviceIpAddress], Source={x:Static loc:Localizer.Instance}}"/>
 <TextBlock Text="{Binding [DeviceIpHelp], Source={x:Static loc:Localizer.Instance}}" TextWrapping="Wrap"/>
 <TextBlock x:Name="Feedback" Margin="0,12,0,24" TextWrapping="Wrap"/>
-<TextBlock Text="{Binding [StatusRefreshPending], Source={x:Static loc:Localizer.Instance}}" TextWrapping="Wrap"/>
+<TextBlock Text="{Binding [StatusRefreshInterval], Source={x:Static loc:Localizer.Instance}}" TextWrapping="Wrap"/>
+<ComboBox x:Name="RefreshInterval" Margin="0,8,0,0" SelectionChanged="IntervalChanged" AutomationProperties.Name="{Binding [StatusRefreshInterval], Source={x:Static loc:Localizer.Instance}}"/>
 </StackPanel></UserControl>
