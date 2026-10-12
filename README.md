@@ -1,6 +1,6 @@
 # Daikin Desktop Controller
 
-Tray-first Windows shell for local Air Conditioner control. First-Run Setup discovers and pairs a local Air Conditioner. Configured launches start in the tray. While the Compact Control Panel is visible, it shows current power and temperatures and refreshes at the chosen Status Refresh Interval. Power and temperature controls arrive in issue #5.
+Tray-first Windows shell for local Air Conditioner control. First-Run Setup discovers and pairs a local Air Conditioner. Configured launches start in the tray. While the Compact Control Panel is visible, it shows current power and temperatures and refreshes at the chosen Status Refresh Interval. Power and target temperature controls show pending requests and reconcile against device status without automatic resend.
 
 ## Build and run
 
@@ -51,3 +51,14 @@ Device-control tests target plain .NET 10 and can also run on macOS with `dotnet
 5. Switch App Language and verify decimal temperatures use a comma in Brazilian Portuguese.
 6. Hide the panel via desktop click, Settings, or Alt+F4 and verify status reads stop; reopening reads immediately.
 7. Verify unavailable states appear in the panel without Windows notifications.
+
+## Power and temperature verification on Windows
+
+Writes require real-device verification per ADR 0004.
+
+1. Toggle power and confirm the unit and panel agree.
+2. Click + and − rapidly; each click sends one command and the final value sticks.
+3. Drag the slider; one command is sent on release. Test keyboard and track clicks too.
+4. Switch to Fan or Dry in the official app; temperature is disabled with an explanation.
+5. Disconnect the network mid-command; the app refreshes without resending, then shows Unavailable with controls disabled.
+6. Check English and Brazilian Portuguese, pending hints, and rejection errors.

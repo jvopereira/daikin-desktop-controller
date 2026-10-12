@@ -29,9 +29,43 @@ public class ProtocolTests
         var iv = Convert.FromHexString("000102030405060708090a0b0c0d0e0f");
         var plain = Convert.FromHexString("6bc1bee22e409f96e93d7e117393172aae2d8a571e03ac9c9eb76fac45af8e51");
         var cipher = Convert.FromHexString("3b3fd92eb72dad20333449f8e83cfb4ac8a64537a0b3a93fcde3cdad9f1ce58b");
+        Assert.Equal(cipher, AesCfb128.Encrypt(plain, key, iv));
+        Assert.Equal(cipher[..23], AesCfb128.Encrypt(plain[..23], key, iv));
         Assert.Equal(plain, AesCfb128.Decrypt(cipher, key, iv));
         Assert.Equal(plain[..23], AesCfb128.Decrypt(cipher[..23], key, iv));
         Assert.Equal(plain[..23], AesCfb128.Decrypt(Encrypt(plain[..23], key, iv), key, iv));
+    }
+    [Fact] public void RequestRoundTripsWithRandomIvAndValidCrc()
+    {
+        var plain = "{\"port1\":{\"power\":1}}BZ"u8.ToArray();
+        var first = Convert.FromBase64String(RequestPacket.Encode(plain, Key));
+        var second = Convert.FromBase64String(RequestPacket.Encode(plain, Key));
+        Assert.False(first.AsSpan(0, 16).SequenceEqual(second.AsSpan(0, 16)));
+        Assert.Equal(Crc16.Compute(first.AsSpan(0, first.Length - 2)), BinaryPrimitives.ReadUInt16LittleEndian(first.AsSpan(first.Length - 2)));
+        Assert.Equal(plain, AesCfb128.Decrypt(first.AsSpan(16, first.Length - 18), Key.Bytes.Span, first.AsSpan(0, 16)));
+    }
+    [Fact] public void CommandPlaintextIsCompactAndSuffixed()
+    {
+        Assert.Equal("{\"port1\":{\"power\":1}}BZ", Encoding.UTF8.GetString(new AirConditionerCommand.SetPower(true).ToPlaintext()));
+        Assert.Equal("{\"port1\":{\"power\":0}}BZ", Encoding.UTF8.GetString(new AirConditionerCommand.SetPower(false).ToPlaintext()));
+        Assert.Equal("{\"port1\":{\"temperature\":24}}BZ", Encoding.UTF8.GetString(new AirConditionerCommand.SetTargetTemperature(24).ToPlaintext()));
+    }
+    [Theory]
+    [InlineData("0", 18, 30)] [InlineData("1", 18, 30)] [InlineData("3", 18, 32)] [InlineData("4", 10, 30)]
+    public void ModeDefinesTemperatureCapabilities(string mode, double min, double max)
+    {
+        Assert.Equal(new TargetTemperatureRange(min, max, 1), TargetTemperatureRange.ForMode(mode));
+        var status = new AirConditionerStatus(true, mode, 24, null, null);
+        Assert.True(new AirConditionerCommand.SetTargetTemperature(min).IsSupportedBy(status));
+        Assert.False(new AirConditionerCommand.SetTargetTemperature(min - 1).IsSupportedBy(status));
+        Assert.False(new AirConditionerCommand.SetTargetTemperature(max + 1).IsSupportedBy(status));
+        Assert.False(new AirConditionerCommand.SetTargetTemperature(min + 0.5).IsSupportedBy(status));
+    }
+    [Theory] [InlineData("2")] [InlineData("6")] [InlineData("unknown")]
+    public void UnsupportedModesRejectTemperature(string mode)
+    {
+        Assert.Null(TargetTemperatureRange.ForMode(mode));
+        Assert.False(new AirConditionerCommand.SetTargetTemperature(24).IsSupportedBy(new(true, mode, 24, null, null)));
     }
     internal static byte[] Encrypt(byte[] plain, byte[] key, byte[] iv)
     {
@@ -101,6 +135,43 @@ public class ClientTests
         var result = await new LocalAirConditionerClient(endpoint.Port, TimeSpan.FromSeconds(2)).ReadStatusAsync(IPAddress.Loopback,key);
         Assert.Equal(expected, result.Outcome);
         if (!wrongKey) { Assert.True(result.Status!.IsOn); Assert.Equal(24, result.Status.TargetTemperature); Assert.Equal(26, result.Status.RoomTemperature); }
+        await server;
+    }
+    [Theory]
+    [InlineData("match", CommandOutcome.Confirmed)]
+    [InlineData("different", CommandOutcome.NotApplied)]
+    [InlineData("crc", CommandOutcome.UnexpectedResponse)]
+    [InlineData("silent", CommandOutcome.NoResponse)]
+    public async Task CommandUsesRawPostAndClassifiesReply(string kind, CommandOutcome expected)
+    {
+        using var listener = new TcpListener(IPAddress.Loopback, 0); listener.Start();
+        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+        var server = Task.Run(async () =>
+        {
+            using var peer = await listener.AcceptTcpClientAsync(); using var stream = peer.GetStream();
+            using var received = new MemoryStream(); var chunk = new byte[1024];
+            string request; int end, length;
+            while (true)
+            {
+                var count = await stream.ReadAsync(chunk); Assert.True(count > 0); received.Write(chunk, 0, count);
+                request = Encoding.ASCII.GetString(received.ToArray()); end = request.IndexOf("\r\n\r\n", StringComparison.Ordinal);
+                if (end < 0) continue;
+                var headers = request[..end].Split("\r\n");
+                Assert.Equal("POST /acstatus HTTP/1.1", headers[0]); Assert.Equal(3, headers.Length);
+                length = int.Parse(headers.Single(h => h.StartsWith("Content-Length:", StringComparison.Ordinal)).Split(':')[1]);
+                if (request.Length - end - 4 >= length) break;
+            }
+            var packet = Convert.FromBase64String(request.Substring(end + 4, length));
+            Assert.Equal(Crc16.Compute(packet.AsSpan(0, packet.Length - 2)), BinaryPrimitives.ReadUInt16LittleEndian(packet.AsSpan(packet.Length - 2)));
+            Assert.Equal("{\"port1\":{\"power\":1}}BZ", Encoding.UTF8.GetString(AesCfb128.Decrypt(packet.AsSpan(16, packet.Length - 18), ProtocolTests.Key.Bytes.Span, packet.AsSpan(0, 16))));
+            if (kind == "silent") { await Task.Delay(500); return; }
+            var body = ProtocolTests.Packet(kind == "different" ? ProtocolTests.Json.Replace("\"power\":1", "\"power\":0") : ProtocolTests.Json);
+            if (kind == "crc") { var bytes = Convert.FromBase64String(body); bytes[^1] ^= 1; body = Convert.ToBase64String(bytes); }
+            await stream.WriteAsync(Encoding.ASCII.GetBytes($"HTTP/1.1 200 OK\r\nContent-Length: {body.Length}\r\n\r\n{body}"));
+        });
+        var result = await new LocalAirConditionerClient(port, TimeSpan.FromMilliseconds(250)).SendCommandAsync(IPAddress.Loopback, ProtocolTests.Key, new AirConditionerCommand.SetPower(true));
+        Assert.Equal(expected, result.Outcome);
+        if (kind is "match" or "different") Assert.NotNull(result.Status);
         await server;
     }
     [Fact] public async Task ClosedPortIsUnreachable()

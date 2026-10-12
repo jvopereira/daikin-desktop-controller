@@ -78,23 +78,21 @@ public sealed class StatusMonitorTests
     {
         using var f = new Fixture(); f.Secrets.Fail = true;
         await f.Monitor.RefreshAsync();
-        var calls = 0;
-        Assert.False(await f.Monitor.SendAsync(_ => { calls++; return Task.CompletedTask; }));
+        Assert.Null(await f.Monitor.SendAsync(new AirConditionerCommand.SetPower(false)));
         f.Secrets.Fail = false; await f.Monitor.RefreshAsync();
-        Assert.True(f.Monitor.CanSendCommands); Assert.Equal(0, calls);
-        Assert.True(await f.Monitor.SendAsync(_ => { calls++; return Task.CompletedTask; }));
-        Assert.Equal(1, calls);
+        Assert.True(f.Monitor.CanSendCommands); Assert.Equal(0, f.Client.CommandCalls);
+        Assert.NotNull(await f.Monitor.SendAsync(new AirConditionerCommand.SetPower(false)));
+        Assert.Equal(1, f.Client.CommandCalls);
     }
     [Theory] [InlineData(false)] [InlineData(true)]
     public async Task CommandRefreshesImmediatelyAndIsNotResent(bool timeout)
     {
         using var f = new Fixture(); f.Monitor.Start();
-        var calls = 0;
-        Task Command(CancellationToken _) { calls++; return timeout ? Task.FromException(new TimeoutException()) : Task.CompletedTask; }
-        if (timeout) await Assert.ThrowsAsync<TimeoutException>(() => f.Monitor.SendAsync(Command));
-        else Assert.True(await f.Monitor.SendAsync(Command));
-        Assert.Equal(1, calls); Assert.Equal(2, f.Client.Calls); Assert.IsType<Available>(f.Monitor.State);
+        f.Client.Command = _ => Task.FromResult(new CommandResult(timeout ? CommandOutcome.NoResponse : CommandOutcome.Confirmed));
+        Assert.NotNull(await f.Monitor.SendAsync(new AirConditionerCommand.SetPower(false)));
+        Assert.Equal(1, f.Client.CommandCalls); Assert.Equal(2, f.Client.Calls); Assert.IsType<Available>(f.Monitor.State);
     }
+
     [Fact] public async Task StopCancelsPollingAndIgnoresLateResults()
     {
         using var f = new Fixture(); var completion = new TaskCompletionSource<StatusRead>(); CancellationToken token = default;
@@ -110,8 +108,8 @@ public sealed class StatusMonitorTests
         using var f = new Fixture(); var completion = new TaskCompletionSource<StatusRead>();
         f.Client.Read = _ => completion.Task;
         var first = f.Monitor.RefreshAsync();
-        f.Client.Read = _ => Task.FromResult(Success()); await f.Monitor.RefreshAsync();
-        completion.SetResult(new(StatusReadOutcome.KeyRejected)); await first;
+        f.Client.Read = _ => Task.FromResult(Success()); var second = f.Monitor.RefreshAsync();
+        completion.SetResult(new(StatusReadOutcome.KeyRejected)); await first; await second;
         Assert.IsType<Available>(f.Monitor.State); Assert.Equal(2, f.Client.Calls);
     }
     [Fact] public async Task PollingRecoversAutomaticallyAndRetainsLastStatusDuringRead()
@@ -136,11 +134,42 @@ public sealed class StatusMonitorTests
     [Fact] public async Task StopDuringCommandDoesNotRestartMonitoring()
     {
         using var f = new Fixture(); f.Monitor.Start();
-        var completion = new TaskCompletionSource();
-        var command = f.Monitor.SendAsync(_ => completion.Task);
-        f.Monitor.Stop(); completion.SetResult(); await command;
+        var completion = new TaskCompletionSource<CommandResult>();
+        f.Client.Command = _ => completion.Task;
+        var command = f.Monitor.SendAsync(new AirConditionerCommand.SetPower(false));
+        f.Monitor.Stop(); completion.SetResult(new(CommandOutcome.NoResponse)); await command;
         f.Clock.Advance(TimeSpan.FromSeconds(60)); Assert.Equal(1, f.Client.Calls);
         Assert.False(f.Monitor.CanSendCommands);
+    }
+    [Fact] public async Task CommandsKeepSessionTokenAndDeviceCallsNeverOverlap()
+    {
+        using var f = new Fixture(); f.Monitor.Start();
+        var active = 0; var maximum = 0; CancellationToken firstToken = default;
+        var firstReply = new TaskCompletionSource<CommandResult>();
+        var secondReply = new TaskCompletionSource<CommandResult>();
+        var secondEntered = new TaskCompletionSource();
+        f.Client.Command = async ct =>
+        {
+            active++; maximum = Math.Max(maximum, active);
+            var number = f.Client.CommandCalls;
+            if (number == 1) firstToken = ct; else secondEntered.SetResult();
+            var result = await (number == 1 ? firstReply.Task : secondReply.Task);
+            active--; return result;
+        };
+        f.Client.Read = _ =>
+        {
+            active++; maximum = Math.Max(maximum, active); active--;
+            return Task.FromResult(Success());
+        };
+        var first = f.Monitor.SendAsync(new AirConditionerCommand.SetPower(false));
+        var second = f.Monitor.SendAsync(new AirConditionerCommand.SetPower(true));
+        Assert.Equal(1, f.Client.CommandCalls); Assert.False(firstToken.IsCancellationRequested);
+        firstReply.SetResult(new(CommandOutcome.Confirmed, new(false, "3", 24, null, null)));
+        await secondEntered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.False(firstToken.IsCancellationRequested);
+        secondReply.SetResult(new(CommandOutcome.Confirmed, new(true, "3", 24, null, null)));
+        await Task.WhenAll(first, second);
+        Assert.Equal(1, maximum); Assert.Equal(2, f.Client.CommandCalls);
     }
     [Fact] public async Task StopCancelsScheduledPollingAndDisposeUnsubscribes()
     {
@@ -149,7 +178,7 @@ public sealed class StatusMonitorTests
         f.Preferences.Update(p => p with { StatusRefreshIntervalSeconds = 5 });
         f.Clock.Advance(TimeSpan.FromMinutes(1));
         Assert.Equal(1, f.Client.Calls);
-        Assert.False(await f.Monitor.SendAsync(_ => throw new InvalidOperationException()));
+        Assert.Null(await f.Monitor.SendAsync(new AirConditionerCommand.SetPower(false)));
     }
     [Fact] public void StartIsIdempotentWhileRunning()
     {
@@ -165,7 +194,7 @@ public sealed class StatusMonitorTests
         finally { CultureInfo.CurrentUICulture = previous; }
     }
     private static StatusRead Success() => new(StatusReadOutcome.Succeeded, new(true, "2", 24, 26, "1.0"));
-    private sealed class Fixture : IDisposable
+    internal sealed class Fixture : IDisposable
     {
         public TrackingClock Clock { get; } = new();
         public Secrets Secrets { get; } = new();
@@ -179,7 +208,7 @@ public sealed class StatusMonitorTests
         }
         public void Dispose() => Monitor.Dispose();
     }
-    private sealed class TrackingClock : TimeProvider
+    internal sealed class TrackingClock : TimeProvider
     {
         private readonly FakeTimeProvider inner = new();
         private readonly Channel<bool> timers = Channel.CreateUnbounded<bool>();
@@ -195,9 +224,13 @@ public sealed class StatusMonitorTests
         public void Advance(TimeSpan time) => inner.Advance(time);
         public async Task NextTimer() => await timers.Reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(5));
     }
-    private sealed class Client : IAirConditionerClient
+    internal sealed class Client : IAirConditionerClient
     {
         private readonly Channel<int> reads = Channel.CreateUnbounded<int>();
+        public int CommandCalls { get; private set; }
+        public Func<CancellationToken, Task<CommandResult>> Command { get; set; } = _ => Task.FromResult(new CommandResult(CommandOutcome.Confirmed));
+        public Task<CommandResult> SendCommandAsync(IPAddress address, DeviceSecretKey key, AirConditionerCommand command, CancellationToken ct = default)
+        { CommandCalls++; return Command(ct); }
         public int Calls { get; private set; }
         public Func<CancellationToken, Task<StatusRead>> Read { get; set; } = _ => Task.FromResult(Success());
         public Task<StatusRead> ReadStatusAsync(IPAddress address, DeviceSecretKey key, CancellationToken ct)
@@ -210,7 +243,7 @@ public sealed class StatusMonitorTests
         }
         public async Task NextRead() => await reads.Reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(5));
     }
-    private sealed class Secrets : ISecretStore
+    internal sealed class Secrets : ISecretStore
     {
         public bool Fail { get; set; }
         public DeviceSecretKey? Read()
@@ -221,7 +254,7 @@ public sealed class StatusMonitorTests
         public void Save(DeviceSecretKey key) => throw new NotSupportedException();
         public void Delete() => throw new NotSupportedException();
     }
-    private sealed class Configuration : IAirConditionerConfigurationStore
+    internal sealed class Configuration : IAirConditionerConfigurationStore
     {
         private readonly AirConditionerConfiguration value = new("unit", "192.0.2.1");
         public bool HasConfiguredAirConditioner => true;

@@ -25,6 +25,7 @@ public sealed class AppShell : IDisposable
     private readonly IAirConditionerConfigurationStore configuration;
     private readonly SetupCoordinator coordinator;
     private readonly StatusMonitor monitor;
+    private readonly AirConditionerControls controls;
     public AppShell(Application application)
     {
         this.application = application;
@@ -32,6 +33,7 @@ public sealed class AppShell : IDisposable
         var client = new LocalAirConditionerClient();
         coordinator = new SetupCoordinator(new ZeroconfDeviceDiscovery(), client, secrets, configuration, preferences);
         monitor = new StatusMonitor(client, secrets, configuration, preferences, TimeProvider.System);
+        controls = new(monitor);
     }
     private readonly PreferencesSession preferences = new(new JsonPreferencesStore(JsonPreferencesStore.DefaultPath));
     private readonly LaunchAtSignIn launch = new(new WindowsRunKey());
@@ -99,7 +101,7 @@ public sealed class AppShell : IDisposable
     {
         if (panel is null)
         {
-            panel = new CompactControlPanel(coordinator, monitor);
+            panel = new CompactControlPanel(coordinator, monitor, controls);
             panel.SettingsRequested += (_, _) => OpenSettings();
             panel.SectionRequested += section => OpenSettings(section);
             panel.Deactivated += (_, _) => { if (panel.IsVisible) { clickGate.RecordDismissal(); panel.Hide(); } };
@@ -139,5 +141,5 @@ public sealed class AppShell : IDisposable
         }
         settings.Show(section);
     }
-    public void Dispose() { monitor.Dispose(); coordinator.Dispose(); preferences.Changed -= PreferencesChanged; tray?.Dispose(); instance.Dispose(); }
+    public void Dispose() { controls.Dispose(); monitor.Dispose(); coordinator.Dispose(); preferences.Changed -= PreferencesChanged; tray?.Dispose(); instance.Dispose(); }
 }

@@ -178,6 +178,7 @@ public class SetupTests
     }
     private sealed class Client : IAirConditionerClient
     {
+        public Task<CommandResult> SendCommandAsync(IPAddress address, DeviceSecretKey key, AirConditionerCommand command, CancellationToken ct = default) => throw new NotSupportedException();
         public Func<IPAddress,CancellationToken,Task<StatusRead>> Read { get; set; } = (_,_) => Task.FromResult(Success());
         public Task<StatusRead> ReadStatusAsync(IPAddress address,DeviceSecretKey key,CancellationToken ct) => Read(address,ct);
     }
