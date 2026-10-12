@@ -9,14 +9,18 @@ internal static class RawHttp
 {
     private const int MaxHeaders = 16 * 1024;
     private const int MaxBody = 1024 * 1024;
-    public static async Task<RawResponse> GetAsync(IPEndPoint endpoint, string path, TimeSpan timeout, CancellationToken ct)
+    public static Task<RawResponse> GetAsync(IPEndPoint endpoint, string path, TimeSpan timeout, CancellationToken ct)
+        => SendAsync(endpoint, "GET", path, null, timeout, ct);
+    public static async Task<RawResponse> SendAsync(IPEndPoint endpoint, string method, string path, string? body, TimeSpan timeout, CancellationToken ct)
     {
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
         deadline.CancelAfter(timeout);
         using var socket = new TcpClient(endpoint.AddressFamily);
         await socket.ConnectAsync(endpoint.Address, endpoint.Port, deadline.Token).ConfigureAwait(false);
         using var stream = socket.GetStream();
-        var request = Encoding.ASCII.GetBytes($"GET {path} HTTP/1.1\r\nHost: {endpoint.Address}:{endpoint.Port}\r\nConnection: close\r\n\r\n");
+        var headers = $"{method} {path} HTTP/1.1\r\nHost: {endpoint.Address}:{endpoint.Port}\r\n";
+        if (body is not null) headers += $"Content-Length: {Encoding.ASCII.GetByteCount(body)}\r\n";
+        var request = Encoding.ASCII.GetBytes(headers + "\r\n" + body);
         await stream.WriteAsync(request, deadline.Token).ConfigureAwait(false);
         using var buffer = new MemoryStream();
         var chunk = new byte[4096];

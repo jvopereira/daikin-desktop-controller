@@ -8,6 +8,7 @@ using DaikinDesktopController.Device.LocalProtocol;
 namespace DaikinDesktopController.Device;
 public interface IAirConditionerClient
 {
+    Task<CommandResult> SendCommandAsync(IPAddress address, DeviceSecretKey key, AirConditionerCommand command, CancellationToken ct = default);
     Task<StatusRead> ReadStatusAsync(IPAddress address, DeviceSecretKey key, CancellationToken ct = default);
 }
 public sealed class LocalAirConditionerClient : IAirConditionerClient
@@ -25,6 +26,35 @@ public sealed class LocalAirConditionerClient : IAirConditionerClient
             if (response.StatusCode != 200) return new(StatusReadOutcome.UnexpectedResponse);
             var packet = ResponsePacket.Decode(response.Body, key);
             if (packet.Failure is not null) return new(StatusReadOutcome.UnexpectedResponse);
+            return ParseStatus(packet);
+        }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested) { return new(StatusReadOutcome.Unreachable); }
+        catch (Exception e) when (e is SocketException or IOException) { return new(StatusReadOutcome.Unreachable); }
+        catch (InvalidResponseException) { return new(StatusReadOutcome.UnexpectedResponse); }
+    }
+    public async Task<CommandResult> SendCommandAsync(IPAddress address, DeviceSecretKey key, AirConditionerCommand command, CancellationToken ct = default)
+    {
+        var plaintext = command.ToPlaintext();
+        string body;
+        try { body = RequestPacket.Encode(plaintext, key); }
+        finally { CryptographicOperations.ZeroMemory(plaintext); }
+        try
+        {
+            var response = await RawHttp.SendAsync(new IPEndPoint(address, port), "POST", "/acstatus", body, timeout, ct).ConfigureAwait(false);
+            if (response.StatusCode != 200) return new(CommandOutcome.UnexpectedResponse);
+            var packet = ResponsePacket.Decode(response.Body, key);
+            if (packet.Failure is not null) return new(CommandOutcome.UnexpectedResponse);
+            var read = ParseStatus(packet);
+            return read.Status is { } status
+                ? new(command.IsSatisfiedBy(status) ? CommandOutcome.Confirmed : CommandOutcome.NotApplied, status)
+                : new(CommandOutcome.UnexpectedResponse);
+        }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested) { return new(CommandOutcome.NoResponse); }
+        catch (Exception e) when (e is SocketException or IOException) { return new(CommandOutcome.NoResponse); }
+        catch (InvalidResponseException) { return new(CommandOutcome.UnexpectedResponse); }
+    }
+    private static StatusRead ParseStatus(PacketDecode packet)
+    {
             try
             {
                 var json = new UTF8Encoding(false, true).GetString(packet.Plaintext!);
@@ -48,9 +78,6 @@ public sealed class LocalAirConditionerClient : IAirConditionerClient
             catch (Exception e) when (e is JsonException or DecoderFallbackException) { return new(StatusReadOutcome.KeyRejected); }
             catch (InvalidOperationException) { return new(StatusReadOutcome.UnexpectedResponse); }
             finally { CryptographicOperations.ZeroMemory(packet.Plaintext!); }
-        }
-        catch (OperationCanceledException) when (!ct.IsCancellationRequested) { return new(StatusReadOutcome.Unreachable); }
-        catch (Exception e) when (e is SocketException or IOException) { return new(StatusReadOutcome.Unreachable); }
-        catch (InvalidResponseException) { return new(StatusReadOutcome.UnexpectedResponse); }
     }
+
 }

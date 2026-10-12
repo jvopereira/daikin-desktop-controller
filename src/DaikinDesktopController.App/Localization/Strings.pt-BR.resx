@@ -162,4 +162,11 @@
   <data name="StatusRefresh10" xml:space="preserve"><value>10 segundos</value></data>
   <data name="StatusRefresh30" xml:space="preserve"><value>30 segundos</value></data>
   <data name="StatusRefresh60" xml:space="preserve"><value>60 segundos</value></data>
+<data name="TurnOn" xml:space="preserve"><value>Ligar</value></data>
+<data name="TurnOff" xml:space="preserve"><value>Desligar</value></data>
+<data name="Pending" xml:space="preserve"><value>Pendente…</value></data>
+<data name="DecreaseTargetTemperature" xml:space="preserve"><value>Diminuir temperatura desejada</value></data>
+<data name="IncreaseTargetTemperature" xml:space="preserve"><value>Aumentar temperatura desejada</value></data>
+<data name="CommandNotAppliedMessage" xml:space="preserve"><value>Não aplicado — mostrando a configuração atual do ar-condicionado. Tente novamente.</value></data>
+<data name="TargetTemperatureUnsupportedMessage" xml:space="preserve"><value>A temperatura desejada não pode ser alterada neste modo de operação.</value></data>
 </root>

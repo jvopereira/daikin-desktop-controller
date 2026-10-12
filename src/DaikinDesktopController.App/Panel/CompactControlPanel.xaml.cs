@@ -12,16 +12,19 @@ public partial class CompactControlPanel : Window
 {
     private readonly SetupCoordinator coordinator;
     private readonly StatusMonitor monitor;
+    private readonly AirConditionerControls controls;
+    private bool rendering, dragging;
     private SettingsSection section;
     public event EventHandler? SettingsRequested;
     public event Action<SettingsSection>? SectionRequested;
-    public CompactControlPanel(SetupCoordinator coordinator, StatusMonitor monitor)
+    public CompactControlPanel(SetupCoordinator coordinator, StatusMonitor monitor, AirConditionerControls controls)
     {
         this.coordinator = coordinator;
         this.monitor = monitor;
+        this.controls = controls;
         InitializeComponent();
         coordinator.StateChanged += Render;
-        monitor.StateChanged += Render;
+        controls.Changed += Render;
         Localizer.Instance.PropertyChanged += LanguageChanged;
         IsVisibleChanged += (_, _) => Render();
         Render();
@@ -65,8 +68,7 @@ public partial class CompactControlPanel : Window
             case Available available:
                 StateTitle.Visibility = StateMessage.Visibility = Visibility.Collapsed;
                 StatusView.Visibility = Visibility.Visible;
-                Bind(Power, TextBlock.TextProperty, available.Status.IsOn ? "PowerOn" : "PowerOff");
-                TargetValue.Text = TemperatureText.Format(available.Status.TargetTemperature);
+                RenderControls();
                 RoomView.Visibility = available.Status.RoomTemperature is null ? Visibility.Collapsed : Visibility.Visible;
                 RoomValue.Text = available.Status.RoomTemperature is { } room ? TemperatureText.Format(room) : "";
                 break;
@@ -86,6 +88,54 @@ public partial class CompactControlPanel : Window
                 Progress.Visibility = Visibility.Visible;
                 break;
         }
+    }
+    private void RenderControls()
+    {
+        rendering = true;
+        try
+        {
+            var power = controls.Power;
+            var temperature = controls.TargetTemperature;
+            Bind(Power, TextBlock.TextProperty, power.Value ? "PowerOn" : "PowerOff");
+            Bind(PowerToggle, ContentControl.ContentProperty, power.Value ? "TurnOff" : "TurnOn");
+            PowerToggle.IsChecked = power.Value;
+            PowerToggle.IsEnabled = controls.CanControl;
+            PowerPending.Visibility = power.IsPending ? Visibility.Visible : Visibility.Collapsed;
+            PowerError.Text = power.Error is null ? "" : Localizer.Instance["CommandNotAppliedMessage"];
+            TemperaturePending.Visibility = temperature.IsPending ? Visibility.Visible : Visibility.Collapsed;
+            var range = controls.TargetTemperatureRange;
+            TemperatureError.Text = range is null || temperature.Error == ControlError.Unsupported
+                ? Localizer.Instance["TargetTemperatureUnsupportedMessage"]
+                : temperature.Error is null ? "" : Localizer.Instance["CommandNotAppliedMessage"];
+            Decrease.IsEnabled = Increase.IsEnabled = TemperatureSlider.IsEnabled = controls.CanControl && range is not null;
+            if (range is not null)
+            {
+                TemperatureSlider.Minimum = range.Min; TemperatureSlider.Maximum = range.Max;
+                TemperatureSlider.TickFrequency = TemperatureSlider.SmallChange = range.Step;
+            }
+            if (!dragging)
+            {
+                TemperatureSlider.Value = temperature.Value;
+                TargetValue.Text = TemperatureText.Format(temperature.Value);
+            }
+        }
+        finally { rendering = false; }
+    }
+    private async void ChangePower(object sender, RoutedEventArgs e) => await controls.SetPower(!controls.Power.Value);
+    private async void DecreaseTemperature(object sender, RoutedEventArgs e) => await controls.StepTargetTemperature(-1);
+    private async void IncreaseTemperature(object sender, RoutedEventArgs e) => await controls.StepTargetTemperature(1);
+    private void TemperatureDragStarted(object sender, System.Windows.Controls.Primitives.DragStartedEventArgs e) => dragging = true;
+    private async void TemperatureDragCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
+    {
+        dragging = false;
+        if (!e.Canceled) await controls.SetTargetTemperature(TemperatureSlider.Value);
+        RenderControls();
+    }
+    private async void TemperatureChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (rendering || controls is null) return;
+        TargetValue.Text = TemperatureText.Format(e.NewValue);
+        if (!dragging) await controls.SetTargetTemperature(e.NewValue);
     }
     private async void Choose(object sender, SelectionChangedEventArgs e)
     { if (Candidates.SelectedItem is DiscoveredAirConditioner candidate) await coordinator.SelectAsync(candidate); }

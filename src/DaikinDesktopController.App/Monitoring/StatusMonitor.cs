@@ -15,12 +15,14 @@ public sealed class StatusMonitor : IDisposable
     private readonly PreferencesSession preferences;
     private readonly TimeProvider clock;
     private readonly TimeSpan retryDelay;
+    private CancellationTokenSource? session;
+    private readonly SemaphoreSlim deviceGate = new(1, 1);
     private CancellationTokenSource? run;
     private CancellationTokenSource? wait;
     private bool disposed;
     public MonitorState State { get; private set; } = new ReadingStatus();
     public event Action? StateChanged;
-    public bool CanSendCommands => run is not null && State is Available;
+    public bool CanSendCommands => session is not null && run is not null && State is Available;
     public StatusMonitor(IAirConditionerClient client, ISecretStore secrets,
         IAirConditionerConfigurationStore configuration, PreferencesSession preferences,
         TimeProvider clock, TimeSpan? retryDelay = null)
@@ -34,8 +36,9 @@ public sealed class StatusMonitor : IDisposable
     private bool Current(CancellationTokenSource attempt) => ReferenceEquals(run, attempt) && !attempt.IsCancellationRequested;
     private CancellationTokenSource Begin()
     {
-        Stop();
-        var attempt = new CancellationTokenSource();
+        run?.Cancel();
+        session ??= new CancellationTokenSource();
+        var attempt = CancellationTokenSource.CreateLinkedTokenSource(session.Token);
         run = attempt;
         return attempt;
     }
@@ -52,6 +55,9 @@ public sealed class StatusMonitor : IDisposable
         var previous = run;
         run = null;
         previous?.Cancel();
+        var oldSession = session;
+        session = null;
+        oldSession?.Cancel();
     }
     // Completes after the immediate read (including its retry), not after the polling loop.
     public Task RefreshAsync()
@@ -100,7 +106,10 @@ public sealed class StatusMonitor : IDisposable
         var address = IPAddress.Parse(saved.IpAddress);
         for (var read = 0; read < 2; read++)
         {
-            var result = await client.ReadStatusAsync(address, key, attempt.Token);
+            StatusRead result;
+            await deviceGate.WaitAsync(attempt.Token);
+            try { result = await client.ReadStatusAsync(address, key, attempt.Token); }
+            finally { deviceGate.Release(); }
             if (!Current(attempt)) return;
             if (result.Outcome == StatusReadOutcome.Succeeded && result.Status is { } status)
             { Set(new Available(status)); return; }
@@ -113,17 +122,34 @@ public sealed class StatusMonitor : IDisposable
             }));
         }
     }
-    public async Task<bool> SendAsync(Func<CancellationToken, Task> command)
+    public async Task<CommandResult?> SendAsync(AirConditionerCommand command)
     {
-        if (!CanSendCommands) return false;
-        var attempt = run!;
-        try { await command(attempt.Token); }
-        finally
+        if (!CanSendCommands) return null;
+        var currentSession = session!;
+        try
         {
-            // A hidden panel or replacement setup must not restart monitoring.
-            if (Current(attempt)) await RefreshAsync();
+            await deviceGate.WaitAsync(currentSession.Token);
+            CommandResult result;
+            try
+            {
+                if (!ReferenceEquals(session, currentSession) || !CanSendCommands) return null;
+                if (State is not Available available || !command.IsSupportedBy(available.Status)) return null;
+                var saved = configuration.Load();
+                var key = secrets.Read();
+                if (saved is null || key is null || !JsonPreferencesStore.IsIpv4(saved.IpAddress)) return null;
+                result = await client.SendCommandAsync(IPAddress.Parse(saved.IpAddress), key, command, currentSession.Token);
+                if (ReferenceEquals(session, currentSession) && result.Status is { } status) Set(new Available(status));
+            }
+            finally { deviceGate.Release(); }
+            if (ReferenceEquals(session, currentSession)) await RefreshAsync();
+            return result;
         }
-        return true;
+        catch (OperationCanceledException) when (currentSession.IsCancellationRequested) { return null; }
+        catch (Exception e) when (e is Win32Exception or UnauthorizedAccessException or System.Security.SecurityException or IOException)
+        {
+            if (ReferenceEquals(session, currentSession)) Set(new Unavailable(UnavailableReason.StorageFailure));
+            return null;
+        }
     }
     private void PreferencesChanged(AppPreferences old, AppPreferences now)
     { if (old.StatusRefreshIntervalSeconds != now.StatusRefreshIntervalSeconds) wait?.Cancel(); }
