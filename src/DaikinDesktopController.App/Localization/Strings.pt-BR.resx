@@ -169,4 +169,20 @@
 <data name="IncreaseTargetTemperature" xml:space="preserve"><value>Aumentar temperatura desejada</value></data>
 <data name="CommandNotAppliedMessage" xml:space="preserve"><value>Não aplicado — mostrando a configuração atual do ar-condicionado. Tente novamente.</value></data>
 <data name="TargetTemperatureUnsupportedMessage" xml:space="preserve"><value>A temperatura desejada não pode ser alterada neste modo de operação.</value></data>
+  <data name="OperatingMode" xml:space="preserve"><value>Modo de operação</value></data>
+  <data name="OperatingModeAuto" xml:space="preserve"><value>Automático</value></data>
+  <data name="OperatingModeCool" xml:space="preserve"><value>Resfriar</value></data>
+  <data name="OperatingModeHeat" xml:space="preserve"><value>Aquecer</value></data>
+  <data name="OperatingModeDry" xml:space="preserve"><value>Desumidificar</value></data>
+  <data name="OperatingModeFan" xml:space="preserve"><value>Ventilar</value></data>
+  <data name="OperatingModeUnknownMessage" xml:space="preserve"><value>O modo de operação informado é desconhecido. Selecione um modo para alterá-lo.</value></data>
+  <data name="FanSpeed" xml:space="preserve"><value>Velocidade do ventilador</value></data>
+  <data name="FanSpeedAuto" xml:space="preserve"><value>Automática</value></data>
+  <data name="FanSpeedQuiet" xml:space="preserve"><value>Silenciosa</value></data>
+  <data name="FanSpeedLow" xml:space="preserve"><value>Baixa</value></data>
+  <data name="FanSpeedMediumLow" xml:space="preserve"><value>Média-baixa</value></data>
+  <data name="FanSpeedMedium" xml:space="preserve"><value>Média</value></data>
+  <data name="FanSpeedMediumHigh" xml:space="preserve"><value>Média-alta</value></data>
+  <data name="FanSpeedHigh" xml:space="preserve"><value>Alta</value></data>
+  <data name="FanSpeedUnsupportedMessage" xml:space="preserve"><value>A velocidade do ventilador está indisponível no modo Desumidificar ou em modos desconhecidos, ou quando o ar-condicionado não informa uma velocidade compatível.</value></data>
 </root>
