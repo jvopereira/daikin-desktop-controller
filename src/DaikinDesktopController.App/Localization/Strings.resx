@@ -169,4 +169,20 @@
 <data name="IncreaseTargetTemperature" xml:space="preserve"><value>Increase target temperature</value></data>
 <data name="CommandNotAppliedMessage" xml:space="preserve"><value>Not applied — showing the air conditioner's current setting. Try again.</value></data>
 <data name="TargetTemperatureUnsupportedMessage" xml:space="preserve"><value>Target temperature can't be changed in this operating mode.</value></data>
+  <data name="OperatingMode" xml:space="preserve"><value>Operating mode</value></data>
+  <data name="OperatingModeAuto" xml:space="preserve"><value>Auto</value></data>
+  <data name="OperatingModeCool" xml:space="preserve"><value>Cool</value></data>
+  <data name="OperatingModeHeat" xml:space="preserve"><value>Heat</value></data>
+  <data name="OperatingModeDry" xml:space="preserve"><value>Dry</value></data>
+  <data name="OperatingModeFan" xml:space="preserve"><value>Fan</value></data>
+  <data name="OperatingModeUnknownMessage" xml:space="preserve"><value>The reported operating mode is unknown. Select a mode to change it.</value></data>
+  <data name="FanSpeed" xml:space="preserve"><value>Fan speed</value></data>
+  <data name="FanSpeedAuto" xml:space="preserve"><value>Auto</value></data>
+  <data name="FanSpeedQuiet" xml:space="preserve"><value>Quiet</value></data>
+  <data name="FanSpeedLow" xml:space="preserve"><value>Low</value></data>
+  <data name="FanSpeedMediumLow" xml:space="preserve"><value>Medium-low</value></data>
+  <data name="FanSpeedMedium" xml:space="preserve"><value>Medium</value></data>
+  <data name="FanSpeedMediumHigh" xml:space="preserve"><value>Medium-high</value></data>
+  <data name="FanSpeedHigh" xml:space="preserve"><value>High</value></data>
+  <data name="FanSpeedUnsupportedMessage" xml:space="preserve"><value>Fan speed is unavailable in Dry or unknown modes, or when the air conditioner does not report a supported fan speed.</value></data>
 </root>

@@ -89,8 +89,11 @@ _Avoid_: Public IP address
 ## Air conditioner controls
 
 **Operating Mode**:
-The primary climate operation selected for the Air Conditioner, such as cooling, heating, dry, fan, or auto.
+The primary climate operation selected for the Air Conditioner: Auto, Cool, Heat, Dry, or Fan, with options derived from the vendor table.
 _Avoid_: Comfort Mode, Economy Mode (these are separate features)
+
+**Fan Speed**:
+The requested airflow speed: Auto, Quiet, Low, MediumLow, Medium, MediumHigh, or High, derived from the vendor table. Changes are unavailable in Dry or unknown Operating Modes and when no supported speed is reported.
 
 **Target Temperature**:
 The temperature the user asks the Air Conditioner to maintain.

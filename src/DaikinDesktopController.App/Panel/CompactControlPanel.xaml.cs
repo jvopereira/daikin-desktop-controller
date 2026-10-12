@@ -94,6 +94,21 @@ public partial class CompactControlPanel : Window
         rendering = true;
         try
         {
+            var mode = controls.OperatingMode;
+            var fan = controls.FanSpeed;
+            OperatingModeSelector.ItemsSource = Enum.GetValues<OperatingMode>().Where(value => value != OperatingMode.Heat).Select(value => new ControlOption<OperatingMode>(value, Localizer.Instance["OperatingMode" + value])).ToArray();
+            FanSpeedSelector.ItemsSource = Enum.GetValues<FanSpeed>().Select(value => new ControlOption<FanSpeed>(value, Localizer.Instance["FanSpeed" + value])).ToArray();
+            OperatingModeSelector.SelectedValue = mode.Value;
+            FanSpeedSelector.SelectedValue = fan.Value;
+            OperatingModeSelector.IsEnabled = controls.CanControl;
+            FanSpeedSelector.IsEnabled = controls.CanControl && controls.FanSpeedSupported;
+            OperatingModePending.Visibility = mode.IsPending ? Visibility.Visible : Visibility.Collapsed;
+            FanSpeedPending.Visibility = fan.IsPending ? Visibility.Visible : Visibility.Collapsed;
+            OperatingModeError.Text = mode.Value is null ? Localizer.Instance["OperatingModeUnknownMessage"]
+                : mode.Error is null ? "" : Localizer.Instance["CommandNotAppliedMessage"];
+            FanSpeedError.Text = !controls.FanSpeedSupported || fan.Error == ControlError.Unsupported
+                ? Localizer.Instance["FanSpeedUnsupportedMessage"]
+                : fan.Error is null ? "" : Localizer.Instance["CommandNotAppliedMessage"];
             var power = controls.Power;
             var temperature = controls.TargetTemperature;
             Bind(Power, TextBlock.TextProperty, power.Value ? "PowerOn" : "PowerOff");
@@ -120,6 +135,17 @@ public partial class CompactControlPanel : Window
             }
         }
         finally { rendering = false; }
+    }
+    private sealed record ControlOption<T>(T Value, string Label);
+    private async void ChangeOperatingMode(object sender, SelectionChangedEventArgs e)
+    {
+        if (!rendering && OperatingModeSelector.SelectedItem is ControlOption<OperatingMode> option)
+            await controls.SetOperatingMode(option.Value);
+    }
+    private async void ChangeFanSpeed(object sender, SelectionChangedEventArgs e)
+    {
+        if (!rendering && FanSpeedSelector.SelectedItem is ControlOption<FanSpeed> option)
+            await controls.SetFanSpeed(option.Value);
     }
     private async void ChangePower(object sender, RoutedEventArgs e) => await controls.SetPower(!controls.Power.Value);
     private async void DecreaseTemperature(object sender, RoutedEventArgs e) => await controls.StepTargetTemperature(-1);

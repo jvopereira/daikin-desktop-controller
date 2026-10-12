@@ -67,6 +67,41 @@ public class ProtocolTests
         Assert.Null(TargetTemperatureRange.ForMode(mode));
         Assert.False(new AirConditionerCommand.SetTargetTemperature(24).IsSupportedBy(new(true, mode, 24, null, null)));
     }
+    [Theory]
+    [InlineData("0", OperatingMode.Auto)] [InlineData("1", OperatingMode.Auto)]
+    [InlineData("2", OperatingMode.Dry)] [InlineData("3", OperatingMode.Cool)]
+    [InlineData("4", OperatingMode.Heat)] [InlineData("6", OperatingMode.Fan)] [InlineData("99", null)]
+    public void MapsReportedModes(string code, OperatingMode? expected) =>
+        Assert.Equal(expected, new AirConditionerStatus(true, code, 24, null, null).OperatingMode);
+    [Theory]
+    [InlineData("17", FanSpeed.Auto)] [InlineData("18", FanSpeed.Quiet)] [InlineData("3", FanSpeed.Low)]
+    [InlineData("4", FanSpeed.MediumLow)] [InlineData("5", FanSpeed.Medium)]
+    [InlineData("6", FanSpeed.MediumHigh)] [InlineData("7", FanSpeed.High)] [InlineData("99", null)]
+    public void MapsReportedFanSpeeds(string code, FanSpeed? expected) =>
+        Assert.Equal(expected, new AirConditionerStatus(true, "3", 24, null, null, code).FanSpeed);
+    [Theory]
+    [InlineData("0", "17", true)] [InlineData("1", "17", true)] [InlineData("3", "3", true)]
+    [InlineData("4", "5", true)] [InlineData("6", "18", true)] [InlineData("2", "17", false)]
+    [InlineData("99", "17", false)] [InlineData("3", null, false)] [InlineData("3", "99", false)]
+    public void FanCapabilitiesRequireSupportedModeAndSpeed(string mode, string? fan, bool supported)
+    {
+        var status = new AirConditionerStatus(true, mode, 24, null, null, fan);
+        Assert.Equal(supported, new AirConditionerCommand.SetFanSpeed(FanSpeed.Medium).IsSupportedBy(status));
+        Assert.False(new AirConditionerCommand.SetFanSpeed((FanSpeed)99).IsSupportedBy(status));
+        Assert.False(new AirConditionerCommand.SetOperatingMode((OperatingMode)99).IsSupportedBy(status));
+    }
+    [Theory]
+    [InlineData(OperatingMode.Auto, 1)] [InlineData(OperatingMode.Cool, 3)]
+    [InlineData(OperatingMode.Heat, 4)] [InlineData(OperatingMode.Fan, 6)]
+    public void ModeWritesOnlyMode(OperatingMode mode, int code) => Assert.Equal(
+        "{\"port1\":{\"mode\":" + code + "}}BZ", Encoding.UTF8.GetString(new AirConditionerCommand.SetOperatingMode(mode).ToPlaintext()));
+    [Fact] public void DryWritesAutomaticFanAndMediumWritesOnlyFan()
+    {
+        Assert.Equal("{\"port1\":{\"mode\":2,\"fan\":17}}BZ", Encoding.UTF8.GetString(new AirConditionerCommand.SetOperatingMode(OperatingMode.Dry).ToPlaintext()));
+        Assert.Equal("{\"port1\":{\"fan\":5}}BZ", Encoding.UTF8.GetString(new AirConditionerCommand.SetFanSpeed(FanSpeed.Medium).ToPlaintext()));
+        Assert.True(new AirConditionerCommand.SetOperatingMode(OperatingMode.Auto).IsSatisfiedBy(new(false, "0", 24, null, null)));
+        Assert.True(new AirConditionerCommand.SetFanSpeed(FanSpeed.Medium).IsSatisfiedBy(new(false, "3", 24, null, null, "5")));
+    }
     internal static byte[] Encrypt(byte[] plain, byte[] key, byte[] iv)
     {
         using var aes = Aes.Create(); aes.Key = key;
@@ -80,7 +115,7 @@ public class ProtocolTests
         }
         return output;
     }
-    internal const string Json = "{\"port1\":{\"power\":1,\"mode\":2,\"temperature\":24,\"sensors\":{\"room_temp\":26},\"fw_ver\":\"1.0\"},\"idu\":1}";
+    internal const string Json = "{\"port1\":{\"power\":1,\"mode\":2,\"fan\":17,\"temperature\":24,\"sensors\":{\"room_temp\":26},\"fw_ver\":\"1.0\"},\"idu\":1}";
     internal static string Packet(string json = Json)
     {
         var iv = Enumerable.Range(0,16).Select(i => (byte)i).ToArray();
@@ -134,7 +169,7 @@ public class ClientTests
         var key = wrongKey ? ProtocolTests.Parse(Convert.ToBase64String(new byte[16])) : ProtocolTests.Key;
         var result = await new LocalAirConditionerClient(endpoint.Port, TimeSpan.FromSeconds(2)).ReadStatusAsync(IPAddress.Loopback,key);
         Assert.Equal(expected, result.Outcome);
-        if (!wrongKey) { Assert.True(result.Status!.IsOn); Assert.Equal(24, result.Status.TargetTemperature); Assert.Equal(26, result.Status.RoomTemperature); }
+        if (!wrongKey) { Assert.True(result.Status!.IsOn); Assert.Equal(24, result.Status.TargetTemperature); Assert.Equal(26, result.Status.RoomTemperature); Assert.Equal("17", result.Status.Fan); }
         await server;
     }
     [Theory]
@@ -172,6 +207,24 @@ public class ClientTests
         var result = await new LocalAirConditionerClient(port, TimeSpan.FromMilliseconds(250)).SendCommandAsync(IPAddress.Loopback, ProtocolTests.Key, new AirConditionerCommand.SetPower(true));
         Assert.Equal(expected, result.Outcome);
         if (kind is "match" or "different") Assert.NotNull(result.Status);
+        await server;
+    }
+    [Theory] [InlineData(null)] [InlineData("17")] [InlineData("\"17\"")]
+    public async Task OptionalFanDoesNotRejectStatus(string? fan)
+    {
+        var json = "{\"port1\":{\"power\":1,\"mode\":3,\"temperature\":24" + (fan is null ? "" : ",\"fan\":" + fan) + "}}";
+        var body = ProtocolTests.Packet(json);
+        using var listener = new TcpListener(IPAddress.Loopback, 0); listener.Start();
+        var server = Task.Run(async () =>
+        {
+            using var peer = await listener.AcceptTcpClientAsync(); var stream = peer.GetStream();
+            Assert.True(await stream.ReadAsync(new byte[1024]) > 0);
+            await stream.WriteAsync(Encoding.ASCII.GetBytes($"HTTP/1.1 200 OK\r\nContent-Length: {body.Length}\r\n\r\n{body}"));
+        });
+        var result = await new LocalAirConditionerClient(((IPEndPoint)listener.LocalEndpoint).Port, TimeSpan.FromSeconds(2))
+            .ReadStatusAsync(IPAddress.Loopback, ProtocolTests.Key);
+        Assert.Equal(StatusReadOutcome.Succeeded, result.Outcome);
+        Assert.Equal(fan == "17" ? "17" : null, result.Status!.Fan);
         await server;
     }
     [Fact] public async Task ClosedPortIsUnreachable()
