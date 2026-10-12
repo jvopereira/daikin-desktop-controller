@@ -23,11 +23,11 @@ jobs:
       - name: Lint Markdown
         run: npx --yes markdownlint-cli2 "**/*.md"
       - name: Check links
-        uses: lycheeverse/lychee-action@v2
+        uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2
         with:
           args: --no-progress --verbose README.md
       - name: Check spelling and style
-        uses: errata-ai/vale-action@v2.1.1
+        uses: errata-ai/vale-action@d89dee975228ae261d22c15adcd03578634d429c # v2.1.1
         with:
           files: README.md
           vale_flags: --minAlertLevel=warning

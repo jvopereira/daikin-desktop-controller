@@ -39,6 +39,10 @@ After setup, the app stays in the system tray. Select its tray icon whenever you
 
 The device key is stored in Windows Credential Manager. Network discovery and control require the computer and air conditioner to be able to communicate on the local network.
 
+### Create a release
+
+Publishing a tag that follows [semantic versioning](https://semver.org/), such as `v1.0.0`, starts the release workflow. It builds a self-contained Windows x64 application, packages it as `DaikinDesktopController-Setup-<version>.exe`, and attaches the installer to a GitHub release with generated notes.
+
 ## Build from source
 
 To build the app yourself, install the .NET 10 SDK and run these commands in PowerShell from the repository root:
