@@ -39,3 +39,5 @@ Windows CI builds the WPF application and runs the logic tests. WPF cannot run o
 6. Switch between English and Brazilian Portuguese in each setup state and verify live text updates.
 
 Real-device pairing and Credential Manager require Windows and the target LAN.
+
+Device-control tests target plain .NET 10 and can also run on macOS with `dotnet test tests/DaikinDesktopController.Device.Tests`. App tests and UI verification require Windows.

@@ -105,7 +105,10 @@ public class ShellTests
     public void StartupShowsPanelOnlyWithoutConfiguration(bool configured, bool expected) =>
         Assert.Equal(expected,StartupDecision.ShouldOpenPanel(new ConfigurationStore(configured)));
     private sealed class ConfigurationStore(bool configured) : IAirConditionerConfigurationStore
-    { public bool HasConfiguredAirConditioner => configured; }
+    { public bool HasConfiguredAirConditioner => configured;
+      public AirConditionerConfiguration? Load() => null;
+      public void Save(AirConditionerConfiguration value) { }
+      public void Clear() { } }
     private sealed class Clock : TimeProvider
     {
         public long Timestamp { get; set; }
