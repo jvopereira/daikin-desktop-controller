@@ -12,7 +12,7 @@ The air conditioner reports current mode and fan codes but no supported-option l
 | Heat | 4 |
 | Fan | 6 |
 
-For compatibility with ADR 0007 and this controller’s existing temperature behavior, reported 0 and 1 both mean Auto, even though the vendor mapper names 0 as off. Power remains the separate source of on/off state. Unknown codes have no selected option but users can select a known mode. Mode writes leave power alone. Dry writes also set fan to 17, matching the vendor rule.
+For compatibility with ADR 0007 and this controller’s existing temperature behavior, reported 0 and 1 both mean Auto, even though the vendor mapper names 0 as off. Power remains the separate source of on/off state. Unknown codes have no selected option but users can select a known mode. The Compact Control Panel omits Heat from selectable modes at the user’s request. The device layer retains code 4 for interpreting reported status and protocol compatibility. Mode writes leave power alone. Dry writes also set fan to 17, matching the vendor rule.
 
 | Fan Speed | Code |
 | --- | --- |

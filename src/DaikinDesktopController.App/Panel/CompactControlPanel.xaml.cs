@@ -96,7 +96,7 @@ public partial class CompactControlPanel : Window
         {
             var mode = controls.OperatingMode;
             var fan = controls.FanSpeed;
-            OperatingModeSelector.ItemsSource = Enum.GetValues<OperatingMode>().Select(value => new ControlOption<OperatingMode>(value, Localizer.Instance["OperatingMode" + value])).ToArray();
+            OperatingModeSelector.ItemsSource = Enum.GetValues<OperatingMode>().Where(value => value != OperatingMode.Heat).Select(value => new ControlOption<OperatingMode>(value, Localizer.Instance["OperatingMode" + value])).ToArray();
             FanSpeedSelector.ItemsSource = Enum.GetValues<FanSpeed>().Select(value => new ControlOption<FanSpeed>(value, Localizer.Instance["FanSpeed" + value])).ToArray();
             OperatingModeSelector.SelectedValue = mode.Value;
             FanSpeedSelector.SelectedValue = fan.Value;
