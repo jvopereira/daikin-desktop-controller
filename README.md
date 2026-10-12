@@ -73,3 +73,13 @@ Writes require real-device verification per ADR 0004.
 4. Disconnect the network mid-command: verify a status refresh without resend, followed by Unavailable when the unit cannot be reached. Reconnect and retry manually.
 5. Verify a refused command restores the confirmed value with an error and a manual retry clears the error while pending.
 6. Switch App Language to Brazilian Portuguese and verify labels, pending hints, unsupported explanations, and rejection errors update.
+
+## Compact Control Panel visuals verification on Windows
+
+1. Open the panel from the tray in Light, Dark and System themes; the card, tiles, slider and illustration stay readable in each.
+2. Toggle power: the illustration flap and LED animate, airflow wisps loop while on, and the power button glows.
+3. Turn off Windows animation effects; the panel opens and updates without motion.
+4. Open the Mode and Fan speed tiles with the mouse and with the keyboard (Tab, Alt+Down, arrows, Enter).
+5. Hover disabled tiles to see unsupported explanations; check the footer shows Updating…, Connected and errors.
+6. Switch to Brazilian Portuguese and verify tile text fits.
+7. Check the tray icon at 100%, 150% and 200% scale on light and dark taskbars.
