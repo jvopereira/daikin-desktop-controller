@@ -191,4 +191,14 @@
   <data name="ComfortModeUnsupportedMessage" xml:space="preserve"><value>This air conditioner does not report Comfort mode.</value></data>
   <data name="EconomyMode" xml:space="preserve"><value>Economy mode</value></data>
   <data name="EconomyModeUnsupportedMessage" xml:space="preserve"><value>This air conditioner does not report Economy mode.</value></data>
+  <data name="Room" xml:space="preserve"><value>Room</value></data>
+  <data name="ModeTile" xml:space="preserve"><value>Mode</value></data>
+  <data name="FanSpeedTile" xml:space="preserve"><value>Fan speed</value></data>
+  <data name="TurboTile" xml:space="preserve"><value>Turbo</value></data>
+  <data name="AirflowTile" xml:space="preserve"><value>Airflow</value></data>
+  <data name="AirflowComfort" xml:space="preserve"><value>Comfort</value></data>
+  <data name="AirflowNormal" xml:space="preserve"><value>Normal</value></data>
+  <data name="EcoModeCard" xml:space="preserve"><value>Eco mode</value></data>
+  <data name="Connected" xml:space="preserve"><value>Connected</value></data>
+  <data name="Updating" xml:space="preserve"><value>Updating…</value></data>
 </root>
