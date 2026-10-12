@@ -43,6 +43,26 @@ public sealed class AirConditionerControlsTests
         Assert.Equal(ControlError.Unsupported, controls.TargetTemperature.Error);
         Assert.Equal(0, f.Client.CommandCalls);
     }
+    [Fact] public async Task RejectionShowsConfirmedValueAndNewIntentClearsError()
+    {
+        using var f = new StatusMonitorTests.Fixture(); f.Monitor.Start();
+        using var controls = new AirConditionerControls(f.Monitor);
+        f.Client.Command = _ => Task.FromResult(new CommandResult(CommandOutcome.NotApplied, new(true, "3", 24, null, null)));
+        await controls.SetPower(false);
+        Assert.True(controls.Power.Value); Assert.Equal(ControlError.NotApplied, controls.Power.Error);
+        var reply = new TaskCompletionSource<CommandResult>();
+        f.Client.Command = _ => reply.Task;
+        var retry = controls.SetPower(false);
+        Assert.Null(controls.Power.Error); Assert.True(controls.Power.IsPending);
+        reply.SetResult(new(CommandOutcome.NotApplied)); await retry;
+    }
+    [Fact] public async Task TemperatureAtBoundDoesNotSend()
+    {
+        using var f = new StatusMonitorTests.Fixture();
+        f.Client.Read = _ => Task.FromResult(new StatusRead(StatusReadOutcome.Succeeded, new(true, "3", 32, null, null)));
+        f.Monitor.Start(); using var controls = new AirConditionerControls(f.Monitor);
+        await controls.StepTargetTemperature(1); Assert.Equal(0, f.Client.CommandCalls);
+    }
     [Fact] public async Task UnavailableClearsPendingAndBlocksSends()
     {
         using var f = new StatusMonitorTests.Fixture(); f.Monitor.Start();
