@@ -122,7 +122,7 @@ The MVP must support one configured air conditioner and the following functions:
 
 ## 10. Open questions for future ADRs
 
-1. Should the .NET app implement the local protocol natively in C# or bundle/invoke the existing Go implementation behind the device-control boundary, and how will that choice be maintained?
+1. Resolved by ADR 0006: native C# with Zeroconf discovery; we own protocol maintenance and test vectors.
 
 ## 11. Technical validation notes
 
