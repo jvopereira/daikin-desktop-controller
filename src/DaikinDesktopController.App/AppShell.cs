@@ -37,7 +37,7 @@ public sealed class AppShell : IDisposable
     }
     private readonly PreferencesSession preferences = new(new JsonPreferencesStore(JsonPreferencesStore.DefaultPath));
     private readonly LaunchAtSignIn launch = new(new WindowsRunKey());
-    private readonly string exePath = System.IO.Path.ChangeExtension(typeof(App).Assembly.Location, ".exe");
+    private readonly string exePath = System.IO.Path.Combine(AppContext.BaseDirectory, "DaikinDesktopController.App.exe");
     private TrayIcon? tray;
     private CompactControlPanel? panel;
     private SettingsWindow? settings;

@@ -1,4 +1,4 @@
-# Implement the local protocol natively in C#
+# Implement the local protocol natively in C\#
 
 **Status:** Accepted
 
