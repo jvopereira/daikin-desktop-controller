@@ -9,8 +9,10 @@ public abstract record AirConditionerCommand
     public sealed record SetTurboMode(bool IsOn) : AirConditionerCommand;
     public sealed record SetComfortMode(bool IsOn) : AirConditionerCommand;
     public sealed record SetEconomyMode(bool IsOn) : AirConditionerCommand;
+    public sealed record SetSwing(bool IsOn) : AirConditionerCommand;
     public bool IsSatisfiedBy(AirConditionerStatus status) => this switch
     {
+        SetSwing flag => status.Swing == flag.IsOn,
         SetTurboMode flag => status.TurboMode == flag.IsOn,
         SetComfortMode flag => status.ComfortMode == flag.IsOn,
         SetEconomyMode flag => status.EconomyMode == flag.IsOn,
@@ -22,6 +24,7 @@ public abstract record AirConditionerCommand
     };
     public bool IsSupportedBy(AirConditionerStatus status) => this switch
     {
+        SetSwing => status.Swing is not null,
         SetTurboMode => status.TurboMode is not null,
         SetComfortMode => status.ComfortMode is not null,
         SetEconomyMode => status.EconomyMode is not null,
@@ -42,6 +45,9 @@ public abstract record AirConditionerCommand
             writer.WriteStartObject(); writer.WriteStartObject("port1");
             switch (this)
             {
+                case SetSwing flag:
+                    writer.WriteNumber("v_swing", flag.IsOn ? 1 : 0);
+                    break;
                 case SetTurboMode flag:
                     writer.WriteNumber("powerchill", flag.IsOn ? 1 : 0);
                     if (flag.IsOn) writer.WriteNumber("econo", 0);

@@ -9,7 +9,7 @@ public sealed class AirConditionerControlsTests
         using var f = new StatusMonitorTests.Fixture();
         var status = new AirConditionerStatus(true, "3", 22, null, null);
         f.Client.Read = _ => Task.FromResult(new StatusRead(StatusReadOutcome.Succeeded, status));
-        f.Monitor.Start(); using var controls = new AirConditionerControls(f.Monitor);
+        f.Monitor.Start(); using var controls = new AirConditionerControls(f.Monitor, debounce: TimeSpan.Zero);
         var first = new TaskCompletionSource<CommandResult>();
         var second = new TaskCompletionSource<CommandResult>();
         f.Client.Command = _ => f.Client.CommandCalls == 1 ? first.Task : second.Task;
@@ -27,7 +27,7 @@ public sealed class AirConditionerControlsTests
     public async Task TimeoutRefreshesWithoutResendingAndReconciles(bool applied)
     {
         using var f = new StatusMonitorTests.Fixture(); f.Monitor.Start();
-        using var controls = new AirConditionerControls(f.Monitor);
+        using var controls = new AirConditionerControls(f.Monitor, debounce: TimeSpan.Zero);
         f.Client.Command = _ => Task.FromResult(new CommandResult(CommandOutcome.NoResponse));
         f.Client.Read = _ => Task.FromResult(new StatusRead(StatusReadOutcome.Succeeded, new(!applied, "3", 24, null, null)));
         await controls.SetPower(false);
@@ -37,7 +37,7 @@ public sealed class AirConditionerControlsTests
     [Fact] public async Task EqualAndUnsupportedValuesSendNothing()
     {
         using var f = new StatusMonitorTests.Fixture(); f.Monitor.Start();
-        using var controls = new AirConditionerControls(f.Monitor);
+        using var controls = new AirConditionerControls(f.Monitor, debounce: TimeSpan.Zero);
         await controls.SetPower(true); await controls.SetTargetTemperature(24);
         await controls.SetTargetTemperature(25);
         Assert.Equal(ControlError.Unsupported, controls.TargetTemperature.Error);
@@ -46,7 +46,7 @@ public sealed class AirConditionerControlsTests
     [Fact] public async Task RejectionShowsConfirmedValueAndNewIntentClearsError()
     {
         using var f = new StatusMonitorTests.Fixture(); f.Monitor.Start();
-        using var controls = new AirConditionerControls(f.Monitor);
+        using var controls = new AirConditionerControls(f.Monitor, debounce: TimeSpan.Zero);
         f.Client.Command = _ => Task.FromResult(new CommandResult(CommandOutcome.NotApplied, new(true, "3", 24, null, null)));
         await controls.SetPower(false);
         Assert.True(controls.Power.Value); Assert.Equal(ControlError.NotApplied, controls.Power.Error);
@@ -60,13 +60,13 @@ public sealed class AirConditionerControlsTests
     {
         using var f = new StatusMonitorTests.Fixture();
         f.Client.Read = _ => Task.FromResult(new StatusRead(StatusReadOutcome.Succeeded, new(true, "3", 32, null, null)));
-        f.Monitor.Start(); using var controls = new AirConditionerControls(f.Monitor);
+        f.Monitor.Start(); using var controls = new AirConditionerControls(f.Monitor, debounce: TimeSpan.Zero);
         await controls.StepTargetTemperature(1); Assert.Equal(0, f.Client.CommandCalls);
     }
     [Fact] public async Task UnavailableClearsPendingAndBlocksSends()
     {
         using var f = new StatusMonitorTests.Fixture(); f.Monitor.Start();
-        using var controls = new AirConditionerControls(f.Monitor);
+        using var controls = new AirConditionerControls(f.Monitor, debounce: TimeSpan.Zero);
         f.Secrets.Fail = true; await f.Monitor.RefreshAsync(); await controls.SetPower(false);
         await controls.SetTurboMode(true); await controls.SetComfortMode(true); await controls.SetEconomyMode(true);
         foreach (var feature in new[] { "Turbo", "Comfort", "Economy" })
@@ -93,7 +93,7 @@ public sealed class AirConditionerControlsTests
     {
         using var f = new StatusMonitorTests.Fixture(); var status = Initial;
         f.Client.Read = _ => Task.FromResult(new StatusRead(StatusReadOutcome.Succeeded, status));
-        f.Monitor.Start(); using var controls = new AirConditionerControls(f.Monitor);
+        f.Monitor.Start(); using var controls = new AirConditionerControls(f.Monitor, debounce: TimeSpan.Zero);
         var first = new TaskCompletionSource<CommandResult>(); var second = new TaskCompletionSource<CommandResult>();
         var entered = new TaskCompletionSource();
         f.Client.Command = _ => { if (f.Client.CommandCalls == 1) return first.Task; entered.SetResult(); return second.Task; };
@@ -114,7 +114,7 @@ public sealed class AirConditionerControlsTests
     {
         using var f = new StatusMonitorTests.Fixture(); var status = Initial;
         f.Client.Read = _ => Task.FromResult(new StatusRead(StatusReadOutcome.Succeeded, status));
-        f.Monitor.Start(); using var controls = new AirConditionerControls(f.Monitor);
+        f.Monitor.Start(); using var controls = new AirConditionerControls(f.Monitor, debounce: TimeSpan.Zero);
         f.Client.Command = _ => { if (applied) status = Applied(fan); return Task.FromResult(new CommandResult(CommandOutcome.NoResponse)); };
         await Change(controls, fan);
         Assert.Equal(1, f.Client.CommandCalls); Assert.Equal(2, f.Client.Calls);
@@ -127,7 +127,7 @@ public sealed class AirConditionerControlsTests
     {
         using var f = new StatusMonitorTests.Fixture();
         f.Client.Read = _ => Task.FromResult(new StatusRead(StatusReadOutcome.Succeeded, Initial));
-        f.Monitor.Start(); using var controls = new AirConditionerControls(f.Monitor);
+        f.Monitor.Start(); using var controls = new AirConditionerControls(f.Monitor, debounce: TimeSpan.Zero);
         f.Client.Command = _ => Task.FromResult(new CommandResult(CommandOutcome.NotApplied, Initial));
         await Change(controls, fan);
         Assert.Equal(fan ? (int?)Initial.FanSpeed : (int?)Initial.OperatingMode, Value(controls, fan).Value);
@@ -143,7 +143,7 @@ public sealed class AirConditionerControlsTests
     {
         using var f = new StatusMonitorTests.Fixture(); var status = Initial;
         f.Client.Read = _ => Task.FromResult(new StatusRead(StatusReadOutcome.Succeeded, status));
-        f.Monitor.Start(); using var controls = new AirConditionerControls(f.Monitor);
+        f.Monitor.Start(); using var controls = new AirConditionerControls(f.Monitor, debounce: TimeSpan.Zero);
         await controls.SetOperatingMode(Device.OperatingMode.Cool); await controls.SetFanSpeed(Device.FanSpeed.Auto);
         Assert.Equal(0, f.Client.CommandCalls);
         status = Initial with { Mode = "2" }; await f.Monitor.RefreshAsync();
@@ -154,7 +154,7 @@ public sealed class AirConditionerControlsTests
     {
         using var f = new StatusMonitorTests.Fixture();
         f.Client.Read = _ => Task.FromResult(new StatusRead(StatusReadOutcome.Succeeded, Initial with { Mode = "99", Fan = "99" }));
-        f.Monitor.Start(); using var controls = new AirConditionerControls(f.Monitor);
+        f.Monitor.Start(); using var controls = new AirConditionerControls(f.Monitor, debounce: TimeSpan.Zero);
         Assert.Null(controls.OperatingMode.Value); Assert.Null(controls.FanSpeed.Value); Assert.False(controls.FanSpeedSupported);
     }
     private static AirConditionerStatus FeatureInitial => Initial with { TurboMode = false, ComfortMode = false, EconomyMode = false };
@@ -185,7 +185,7 @@ public sealed class AirConditionerControlsTests
     {
         using var f = new StatusMonitorTests.Fixture(); var status = FeatureInitial;
         f.Client.Read = _ => Task.FromResult(new StatusRead(StatusReadOutcome.Succeeded, status));
-        f.Monitor.Start(); using var controls = new AirConditionerControls(f.Monitor);
+        f.Monitor.Start(); using var controls = new AirConditionerControls(f.Monitor, debounce: TimeSpan.Zero);
         Assert.True(FeatureSupported(controls, feature));
         await ChangeFeature(controls, feature, false);
         Assert.Equal(0, f.Client.CommandCalls);
@@ -200,7 +200,7 @@ public sealed class AirConditionerControlsTests
     {
         using var f = new StatusMonitorTests.Fixture(); var status = FeatureInitial;
         f.Client.Read = _ => Task.FromResult(new StatusRead(StatusReadOutcome.Succeeded, status));
-        f.Monitor.Start(); using var controls = new AirConditionerControls(f.Monitor);
+        f.Monitor.Start(); using var controls = new AirConditionerControls(f.Monitor, debounce: TimeSpan.Zero);
         var first = new TaskCompletionSource<CommandResult>(); var second = new TaskCompletionSource<CommandResult>();
         var entered = new TaskCompletionSource();
         f.Client.Command = _ => { if (f.Client.CommandCalls == 1) return first.Task; entered.SetResult(); return second.Task; };
@@ -221,7 +221,7 @@ public sealed class AirConditionerControlsTests
     {
         using var f = new StatusMonitorTests.Fixture(); var status = FeatureInitial;
         f.Client.Read = _ => Task.FromResult(new StatusRead(StatusReadOutcome.Succeeded, status));
-        f.Monitor.Start(); using var controls = new AirConditionerControls(f.Monitor);
+        f.Monitor.Start(); using var controls = new AirConditionerControls(f.Monitor, debounce: TimeSpan.Zero);
         f.Client.Command = _ => { if (applied) status = FeatureStatus(feature, true); return Task.FromResult(new CommandResult(CommandOutcome.NoResponse)); };
         await ChangeFeature(controls, feature, true);
         Assert.Equal(1, f.Client.CommandCalls); Assert.Equal(2, f.Client.Calls);
@@ -234,7 +234,7 @@ public sealed class AirConditionerControlsTests
     {
         using var f = new StatusMonitorTests.Fixture();
         f.Client.Read = _ => Task.FromResult(new StatusRead(StatusReadOutcome.Succeeded, FeatureInitial));
-        f.Monitor.Start(); using var controls = new AirConditionerControls(f.Monitor);
+        f.Monitor.Start(); using var controls = new AirConditionerControls(f.Monitor, debounce: TimeSpan.Zero);
         f.Client.Command = _ => Task.FromResult(new CommandResult(CommandOutcome.NotApplied, FeatureInitial));
         await ChangeFeature(controls, feature, true);
         Assert.False(FeatureValue(controls, feature).Value);

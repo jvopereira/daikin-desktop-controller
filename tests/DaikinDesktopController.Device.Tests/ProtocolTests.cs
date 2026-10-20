@@ -104,6 +104,8 @@ public class ProtocolTests
     }
     [Fact] public void FeatureCommandsWriteVendorPresets()
     {
+        Assert.Equal("{\"port1\":{\"v_swing\":1}}BZ", Encoding.UTF8.GetString(new AirConditionerCommand.SetSwing(true).ToPlaintext()));
+        Assert.Equal("{\"port1\":{\"v_swing\":0}}BZ", Encoding.UTF8.GetString(new AirConditionerCommand.SetSwing(false).ToPlaintext()));
         Assert.Equal("{\"port1\":{\"powerchill\":1,\"econo\":0}}BZ", Encoding.UTF8.GetString(new AirConditionerCommand.SetTurboMode(true).ToPlaintext()));
         Assert.Equal("{\"port1\":{\"powerchill\":0}}BZ", Encoding.UTF8.GetString(new AirConditionerCommand.SetTurboMode(false).ToPlaintext()));
         Assert.Equal("{\"port1\":{\"coanda\":1}}BZ", Encoding.UTF8.GetString(new AirConditionerCommand.SetComfortMode(true).ToPlaintext()));
@@ -114,9 +116,9 @@ public class ProtocolTests
     [Theory] [InlineData(null)] [InlineData(false)] [InlineData(true)]
     public void FeatureSupportAndSatisfactionRequireReportedField(bool? reported)
     {
-        var status = new AirConditionerStatus(false, "99", 24, null, null, null, reported, reported, reported);
-        AirConditionerCommand[] commands = [new AirConditionerCommand.SetTurboMode(true), new AirConditionerCommand.SetComfortMode(true), new AirConditionerCommand.SetEconomyMode(true)];
-        AirConditionerCommand[] offCommands = [new AirConditionerCommand.SetTurboMode(false), new AirConditionerCommand.SetComfortMode(false), new AirConditionerCommand.SetEconomyMode(false)];
+        var status = new AirConditionerStatus(false, "99", 24, null, null, null, reported, reported, reported, reported);
+        AirConditionerCommand[] commands = [new AirConditionerCommand.SetTurboMode(true), new AirConditionerCommand.SetComfortMode(true), new AirConditionerCommand.SetEconomyMode(true), new AirConditionerCommand.SetSwing(true)];
+        AirConditionerCommand[] offCommands = [new AirConditionerCommand.SetTurboMode(false), new AirConditionerCommand.SetComfortMode(false), new AirConditionerCommand.SetEconomyMode(false), new AirConditionerCommand.SetSwing(false)];
         foreach (var command in commands) { Assert.Equal(reported is not null, command.IsSupportedBy(status)); Assert.Equal(reported == true, command.IsSatisfiedBy(status)); }
         foreach (var command in offCommands) { Assert.Equal(reported is not null, command.IsSupportedBy(status)); Assert.Equal(reported == false, command.IsSatisfiedBy(status)); }
     }
@@ -248,7 +250,7 @@ public class ClientTests
     [Theory] [InlineData(null, null)] [InlineData("0", false)] [InlineData("-2", true)] [InlineData("0.5", true)] [InlineData("true", true)] [InlineData("false", false)] [InlineData("\"1\"", null)] [InlineData("null", null)] [InlineData("{}", null)] [InlineData("[]", null)]
     public async Task OptionalFeaturesDoNotRejectStatus(string? flag, bool? expected)
     {
-        var json = "{\"port1\":{\"power\":1,\"mode\":3,\"temperature\":24" + (flag is null ? "" : ",\"powerchill\":" + flag + ",\"coanda\":" + flag + ",\"econo\":" + flag) + "}}";
+        var json = "{\"port1\":{\"power\":1,\"mode\":3,\"temperature\":24" + (flag is null ? "" : ",\"powerchill\":" + flag + ",\"coanda\":" + flag + ",\"econo\":" + flag + ",\"v_swing\":" + flag) + "}}";
         var body = ProtocolTests.Packet(json);
         using var listener = new TcpListener(IPAddress.Loopback, 0); listener.Start();
         var server = Task.Run(async () =>
@@ -263,6 +265,7 @@ public class ClientTests
         Assert.Equal(expected, result.Status!.TurboMode);
         Assert.Equal(expected, result.Status.ComfortMode);
         Assert.Equal(expected, result.Status.EconomyMode);
+        Assert.Equal(expected, result.Status.Swing);
         await server;
     }
     [Fact] public async Task ClosedPortIsUnreachable()

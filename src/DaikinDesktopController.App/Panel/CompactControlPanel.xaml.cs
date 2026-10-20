@@ -1,4 +1,6 @@
 using System.ComponentModel;
+using System.IO;
+using System.Windows.Input;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
@@ -10,6 +12,7 @@ using DaikinDesktopController.App.Localization;
 using DaikinDesktopController.App.Setup;
 using DaikinDesktopController.App.Monitoring;
 using DaikinDesktopController.App.Settings;
+using DaikinDesktopController.App.Preferences;
 using DaikinDesktopController.Device;
 namespace DaikinDesktopController.App.Panel;
 public partial class CompactControlPanel : Window
@@ -17,21 +20,30 @@ public partial class CompactControlPanel : Window
     private readonly SetupCoordinator coordinator;
     private readonly StatusMonitor monitor;
     private readonly AirConditionerControls controls;
+    private readonly PreferencesSession preferences;
+    private bool editingLocation;
     private bool rendering, dragging;
     private SettingsSection section;
     private string shownTarget = "";
     public event EventHandler? SettingsRequested;
     public event Action<SettingsSection>? SectionRequested;
-    public CompactControlPanel(SetupCoordinator coordinator, StatusMonitor monitor, AirConditionerControls controls)
+    public CompactControlPanel(SetupCoordinator coordinator, StatusMonitor monitor, AirConditionerControls controls, PreferencesSession preferences)
     {
         this.coordinator = coordinator;
         this.monitor = monitor;
         this.controls = controls;
+        this.preferences = preferences;
         InitializeComponent();
         coordinator.StateChanged += Render;
         controls.Changed += Render;
         Localizer.Instance.PropertyChanged += LanguageChanged;
-        IsVisibleChanged += (_, _) => { if (IsVisible) PlayOpen(); Render(); };
+        preferences.Changed += (_, _) => RenderLocation();
+        IsVisibleChanged += (_, _) =>
+        {
+            if (IsVisible) PlayOpen();
+            else if (editingLocation) SaveLocation(this, new RoutedEventArgs());
+            Render();
+        };
         Render();
     }
     private static bool ReduceMotion => !SystemParameters.ClientAreaAnimation;
@@ -49,10 +61,12 @@ public partial class CompactControlPanel : Window
     private void Render()
     {
         var state = coordinator.State;
-        if (state is Configured && IsVisible) monitor.Start(); else monitor.Stop();
+        controls.SetPanelState(state is Configured, IsVisible);
+        RenderLocation();
         StatusView.Visibility = Visibility.Collapsed;
         StateView.Visibility = Visibility.Visible;
-        RoomView.Visibility = PowerToggle.Visibility = FooterStatusView.Visibility = Visibility.Collapsed;
+        RoomView.Visibility = state is Configured && monitor.State is Available ? Visibility.Visible : Visibility.Collapsed;
+        PowerToggle.Visibility = FooterStatusView.Visibility = Visibility.Collapsed;
         HeaderTitle.Visibility = Visibility.Visible;
         if (state is Configured)
         {
@@ -85,7 +99,7 @@ public partial class CompactControlPanel : Window
                 StateView.Visibility = HeaderTitle.Visibility = Visibility.Collapsed;
                 StatusView.Visibility = PowerToggle.Visibility = FooterStatusView.Visibility = Visibility.Visible;
                 RenderControls();
-                RoomView.Visibility = available.Status.RoomTemperature is null ? Visibility.Collapsed : Visibility.Visible;
+                RoomView.Visibility = Visibility.Visible;
                 RoomValue.Text = available.Status.RoomTemperature is { } room ? TemperatureText.Format(room) : "";
                 break;
             case Unavailable unavailable:
@@ -132,6 +146,8 @@ public partial class CompactControlPanel : Window
             RenderFeature(TurboToggle, controls.TurboMode, controls.TurboModeSupported, "TurboModeUnsupportedMessage");
             RenderFeature(ComfortToggle, controls.ComfortMode, controls.ComfortModeSupported, "ComfortModeUnsupportedMessage");
             RenderFeature(EconomyToggle, controls.EconomyMode, controls.EconomyModeSupported, "EconomyModeUnsupportedMessage");
+            RenderFeature(SwingToggle, controls.Swing, controls.SwingSupported, "SwingUnsupportedMessage");
+            PanelState.SetValue(SwingToggle, text[controls.Swing.Value ? "PowerOn" : "PowerOff"]);
             PanelState.SetValue(TurboToggle, text[controls.TurboMode.Value ? "PowerOn" : "PowerOff"]);
             PanelState.SetValue(ComfortToggle, text[controls.ComfortMode.Value ? "AirflowComfort" : "AirflowNormal"]);
             var power = controls.Power;
@@ -165,9 +181,9 @@ public partial class CompactControlPanel : Window
                 ShowTarget(temperature.Value);
             }
             var notApplied = new[] { power.Error, temperature.Error, mode.Error, fan.Error, controls.TurboMode.Error,
-                controls.ComfortMode.Error, controls.EconomyMode.Error }.Contains(ControlError.NotApplied);
+                controls.ComfortMode.Error, controls.EconomyMode.Error, controls.Swing.Error }.Contains(ControlError.NotApplied);
             var pending = power.IsPending || temperature.IsPending || mode.IsPending || fan.IsPending
-                || controls.TurboMode.IsPending || controls.ComfortMode.IsPending || controls.EconomyMode.IsPending;
+                || controls.TurboMode.IsPending || controls.ComfortMode.IsPending || controls.EconomyMode.IsPending || controls.Swing.IsPending;
             RenderFooter(PanelPresentation.Footer(notApplied, mode.Value is null, pending));
         }
         finally { rendering = false; }
@@ -230,6 +246,7 @@ public partial class CompactControlPanel : Window
     }
     private async void ChangeTurboMode(object sender, RoutedEventArgs e) => await controls.SetTurboMode(!controls.TurboMode.Value);
     private async void ChangeComfortMode(object sender, RoutedEventArgs e) => await controls.SetComfortMode(!controls.ComfortMode.Value);
+    private async void ChangeSwing(object sender, RoutedEventArgs e) => await controls.SetSwing(!controls.Swing.Value);
     private async void ChangeEconomyMode(object sender, RoutedEventArgs e) => await controls.SetEconomyMode(!controls.EconomyMode.Value);
     private async void ChangePower(object sender, RoutedEventArgs e) => await controls.SetPower(!controls.Power.Value);
     private async void DecreaseTemperature(object sender, RoutedEventArgs e) => await controls.StepTargetTemperature(-1);
@@ -255,6 +272,43 @@ public partial class CompactControlPanel : Window
     }
     private void OpenSection(object sender, RoutedEventArgs e) => SectionRequested?.Invoke(section);
     private void OpenSettings(object sender, RoutedEventArgs e) => SettingsRequested?.Invoke(this, EventArgs.Empty);
+    private void RenderLocation()
+    {
+        LocationLabel.Text = preferences.Current.LocationName ?? Localizer.Instance["Room"];
+        LocationLabel.ToolTip = LocationLabel.Text;
+        AutomationProperties.SetHelpText(LocationButton, LocationLabel.Text);
+    }
+    private void EditLocation(object sender, RoutedEventArgs e)
+    {
+        editingLocation = true;
+        LocationEditor.Text = preferences.Current.LocationName ?? "";
+        LocationButton.Visibility = Visibility.Collapsed;
+        LocationEditor.Visibility = Visibility.Visible;
+        LocationEditor.Focus(); LocationEditor.SelectAll();
+    }
+    private void LocationKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Escape) { EndLocationEdit(); LocationButton.Focus(); e.Handled = true; }
+        else if (e.Key == Key.Enter) { SaveLocation(sender, e); LocationButton.Focus(); e.Handled = true; }
+    }
+    private void SaveLocation(object sender, RoutedEventArgs e)
+    {
+        if (!editingLocation) return;
+        var name = AppPreferences.NormalizeLocationName(LocationEditor.Text);
+        EndLocationEdit();
+        try { preferences.Update(p => p with { LocationName = name }); }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or System.Security.SecurityException)
+        {
+            MessageBox.Show(this, Localizer.Instance["PreferencesStorageFailure"], Localizer.Instance["AppName"]);
+        }
+        RenderLocation();
+    }
+    private void EndLocationEdit()
+    {
+        editingLocation = false;
+        LocationEditor.Visibility = Visibility.Collapsed;
+        LocationButton.Visibility = Visibility.Visible;
+    }
     protected override void OnClosing(CancelEventArgs e)
     { e.Cancel = true; Hide(); base.OnClosing(e); }
 }
