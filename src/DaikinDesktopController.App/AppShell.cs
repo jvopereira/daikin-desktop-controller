@@ -71,6 +71,7 @@ public sealed class AppShell : IDisposable
     {
         if (old.ManualIpAddress != now.ManualIpAddress)
         {
+            monitor.Stop();
             try
             {
                 if (secrets.Read() is not null) { ShowPanel(); _ = coordinator.StartAsync(); }
@@ -101,7 +102,7 @@ public sealed class AppShell : IDisposable
     {
         if (panel is null)
         {
-            panel = new CompactControlPanel(coordinator, monitor, controls);
+            panel = new CompactControlPanel(coordinator, monitor, controls, preferences);
             panel.SettingsRequested += (_, _) => OpenSettings();
             panel.SectionRequested += section => OpenSettings(section);
             panel.Deactivated += (_, _) => { if (panel.IsVisible) { clickGate.RecordDismissal(); panel.Hide(); } };
@@ -134,6 +135,7 @@ public sealed class AppShell : IDisposable
             settings = new SettingsWindow(preferences, secrets);
             settings.SecretKeySaved += async (_, _) =>
             {
+                monitor.Stop();
                 ShowPanel();
                 await coordinator.StartAsync();
             };

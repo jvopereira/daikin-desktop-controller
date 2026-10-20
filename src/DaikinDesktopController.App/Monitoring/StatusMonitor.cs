@@ -52,12 +52,14 @@ public sealed class StatusMonitor : IDisposable
     }
     public void Stop()
     {
+        if (run is null && session is null) return;
         var previous = run;
         run = null;
         previous?.Cancel();
         var oldSession = session;
         session = null;
         oldSession?.Cancel();
+        StateChanged?.Invoke();
     }
     // Completes after the immediate read (including its retry), not after the polling loop.
     public Task RefreshAsync()

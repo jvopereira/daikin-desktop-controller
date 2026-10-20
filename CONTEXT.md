@@ -88,6 +88,9 @@ _Avoid_: Public IP address
 
 ## Air conditioner controls
 
+**Location Name**:
+The locally saved name shown in the Compact Control Panel header. Edit it directly in the panel; an empty name restores the translated default. It does not rename the Air Conditioner in Daikin's service.
+
 **Operating Mode**:
 The primary climate operation selected for the Air Conditioner: Auto, Cool, Heat, Dry, or Fan, with options derived from the vendor table.
 _Avoid_: Comfort Mode, Economy Mode (these are separate features)
@@ -123,6 +126,9 @@ _Avoid_: Operating Mode, Energy-saving schedule
 
 The supported minimum, maximum, and step derived from the reported Operating Mode using the vendor table. Dry, Fan, and unknown modes have no supported range.
 
+**Swing**:
+The on/off control for vertical airflow oscillation. Reported and written as `v_swing`; supported when its numeric or boolean field is reported.
+
 ### Pending Command
 
-A requested value shown immediately until confirmed or reconciled against refreshed device status. Each intent is sent once; older results cannot overwrite newer intent.
+A requested value shown immediately until confirmed or reconciled against refreshed device status. After 500 ms without valid control changes, only the latest unsent value per control is sent, at most once. Older results cannot overwrite newer intent. Pending commands finish when the panel is hidden; exiting or changing the configured Air Conditioner cancels them.

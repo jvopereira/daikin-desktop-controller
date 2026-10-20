@@ -228,9 +228,10 @@ public sealed class StatusMonitorTests
     {
         private readonly Channel<int> reads = Channel.CreateUnbounded<int>();
         public int CommandCalls { get; private set; }
+        public List<AirConditionerCommand> Commands { get; } = new();
         public Func<CancellationToken, Task<CommandResult>> Command { get; set; } = _ => Task.FromResult(new CommandResult(CommandOutcome.Confirmed));
         public Task<CommandResult> SendCommandAsync(IPAddress address, DeviceSecretKey key, AirConditionerCommand command, CancellationToken ct = default)
-        { CommandCalls++; return Command(ct); }
+        { CommandCalls++; Commands.Add(command); return Command(ct); }
         public int Calls { get; private set; }
         public Func<CancellationToken, Task<StatusRead>> Read { get; set; } = _ => Task.FromResult(Success());
         public Task<StatusRead> ReadStatusAsync(IPAddress address, DeviceSecretKey key, CancellationToken ct)

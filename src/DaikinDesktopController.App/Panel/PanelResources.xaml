@@ -257,7 +257,7 @@
     </Setter>
   </Style>
 
-  <!-- Shared tile look for the four controls under the slider. -->
+  <!-- Shared tile look for the controls under the slider. -->
   <Style x:Key="TileToggleStyle" TargetType="ToggleButton">
     <Setter Property="Height" Value="104"/>
     <Setter Property="Margin" Value="4,0"/>

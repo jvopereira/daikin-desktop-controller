@@ -15,6 +15,22 @@ public sealed class PreferencesTests : IDisposable
         Assert.Null(actual.Language);
         Assert.Equal(ThemePreference.System, actual.Theme);
         Assert.True(actual.LaunchAtSignIn);
+        Assert.Null(actual.LocationName);
+    }
+    [Theory]
+    [InlineData(null, null)] [InlineData("   ", null)] [InlineData("  Escritório  ", "Escritório")]
+    public void LocationNameIsNormalizedAndPersisted(string? value, string? expected)
+    {
+        var store = new JsonPreferencesStore(PreferencesPath);
+        store.Save(new(LocationName: value));
+        Assert.Equal(expected, store.Load().LocationName);
+    }
+    [Fact] public void LocationNameLengthIsLimitedWithoutChangingOtherPreferences()
+    {
+        var store = new JsonPreferencesStore(PreferencesPath);
+        store.Save(new(Language: "en", LocationName: new string('x', 60)));
+        Assert.Equal(new string('x', 40), store.Load().LocationName);
+        Assert.Equal("en", store.Load().Language);
     }
     [Fact]
     public void SaveCreatesDirectoryAndRoundTripsReplacingExistingFile()

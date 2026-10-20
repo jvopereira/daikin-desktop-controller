@@ -84,7 +84,7 @@ public sealed class LocalAirConditionerClient : IAirConditionerClient
                     && roomValue.TryGetDouble(out var measured)) room = measured;
                 var firmware = unit.TryGetProperty("fw_ver", out var fw) && fw.ValueKind == JsonValueKind.String ? fw.GetString() : null;
                 var fan = unit.TryGetProperty("fan", out var fanValue) && fanValue.ValueKind == JsonValueKind.Number ? fanValue.ToString() : null;
-                return new(StatusReadOutcome.Succeeded, new(isOn, mode.ToString(), target, room, firmware, fan, Flag(unit, "powerchill"), Flag(unit, "coanda"), Flag(unit, "econo")));
+                return new(StatusReadOutcome.Succeeded, new(isOn, mode.ToString(), target, room, firmware, fan, Flag(unit, "powerchill"), Flag(unit, "coanda"), Flag(unit, "econo"), Flag(unit, "v_swing")));
             }
             catch (Exception e) when (e is JsonException or DecoderFallbackException) { return new(StatusReadOutcome.KeyRejected); }
             catch (InvalidOperationException) { return new(StatusReadOutcome.UnexpectedResponse); }

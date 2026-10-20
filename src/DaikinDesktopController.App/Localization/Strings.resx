@@ -201,4 +201,8 @@
   <data name="EcoModeCard" xml:space="preserve"><value>Eco mode</value></data>
   <data name="Connected" xml:space="preserve"><value>Connected</value></data>
   <data name="Updating" xml:space="preserve"><value>Updating…</value></data>
+  <data name="Swing" xml:space="preserve"><value>Swing</value></data>
+  <data name="SwingUnsupportedMessage" xml:space="preserve"><value>Swing is not reported by this air conditioner.</value></data>
+  <data name="LocationName" xml:space="preserve"><value>Location name</value></data>
+  <data name="EditLocationName" xml:space="preserve"><value>Edit location name</value></data>
 </root>

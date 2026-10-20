@@ -9,11 +9,14 @@
 
 <!-- Header: room temperature and power -->
 <Grid MinHeight="46">
-<StackPanel x:Name="RoomView" Orientation="Horizontal" VerticalAlignment="Center">
-<ContentControl Style="{StaticResource IconHost}" Tag="{StaticResource Icon.Thermometer}" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-<TextBlock Text="{Binding [Room], Source={x:Static loc:Localizer.Instance}}" FontSize="17" Margin="8,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center"/>
-<TextBlock x:Name="RoomValue" FontSize="17" FontWeight="SemiBold" VerticalAlignment="Center"/>
-</StackPanel>
+<Grid x:Name="RoomView" VerticalAlignment="Center" Margin="0,0,60,0">
+<Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+<Grid>
+<Button x:Name="LocationButton" Click="EditLocation" Background="Transparent" BorderThickness="0" Padding="0" HorizontalContentAlignment="Left" ToolTip="{Binding [EditLocationName], Source={x:Static loc:Localizer.Instance}}" AutomationProperties.Name="{Binding [EditLocationName], Source={x:Static loc:Localizer.Instance}}"><TextBlock x:Name="LocationLabel" FontSize="17" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/></Button>
+<TextBox x:Name="LocationEditor" Visibility="Collapsed" MaxLength="40" KeyDown="LocationKeyDown" LostKeyboardFocus="SaveLocation" AutomationProperties.Name="{Binding [LocationName], Source={x:Static loc:Localizer.Instance}}"/>
+</Grid>
+<TextBlock x:Name="RoomValue" Grid.Column="1" Margin="8,0,0,0" FontSize="17" FontWeight="SemiBold" VerticalAlignment="Center"/>
+</Grid>
 <TextBlock x:Name="HeaderTitle" Text="{Binding [AppName], Source={x:Static loc:Localizer.Instance}}" FontSize="17" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,0,56,0"/>
 <ToggleButton x:Name="PowerToggle" Style="{StaticResource PowerButtonStyle}" Click="ChangePower" HorizontalAlignment="Right"/>
 </Grid>
@@ -21,7 +24,7 @@
 <!-- Air conditioner controls -->
 <Grid x:Name="StatusView" Grid.Row="1" Visibility="Collapsed">
 <Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-<panel:AirConditionerIllustration x:Name="Illustration" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+<Viewbox StretchDirection="DownOnly" HorizontalAlignment="Center" VerticalAlignment="Center"><panel:AirConditionerIllustration x:Name="Illustration"/></Viewbox>
 <Grid x:Name="ControlsArea" Grid.Row="1" Grid.RowSpan="4">
 <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
 <Grid>
@@ -48,12 +51,17 @@
 <TextBlock x:Name="RangeMin" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
 <TextBlock x:Name="RangeMax" FontSize="13" FontWeight="SemiBold" HorizontalAlignment="Right" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
 </Grid>
-<UniformGrid Grid.Row="3" Columns="4" Margin="-4,18,-4,0">
+<StackPanel Grid.Row="3" Margin="-4,18,-4,0">
+<UniformGrid Columns="2">
 <ComboBox x:Name="OperatingModeSelector" Style="{StaticResource TileComboBoxStyle}" Tag="{StaticResource Icon.AutoMode}" panel:PanelState.Label="{Binding [ModeTile], Source={x:Static loc:Localizer.Instance}}" DisplayMemberPath="Label" SelectedValuePath="Value" SelectionChanged="ChangeOperatingMode" AutomationProperties.Name="{Binding [OperatingMode], Source={x:Static loc:Localizer.Instance}}"/>
 <ComboBox x:Name="FanSpeedSelector" Style="{StaticResource TileComboBoxStyle}" Tag="{StaticResource Icon.Fan}" panel:PanelState.Label="{Binding [FanSpeedTile], Source={x:Static loc:Localizer.Instance}}" DisplayMemberPath="Label" SelectedValuePath="Value" SelectionChanged="ChangeFanSpeed" AutomationProperties.Name="{Binding [FanSpeed], Source={x:Static loc:Localizer.Instance}}"/>
+</UniformGrid>
+<UniformGrid Columns="3" Margin="0,8,0,0">
 <ToggleButton x:Name="TurboToggle" Style="{StaticResource TileToggleStyle}" Tag="{StaticResource Icon.Turbo}" panel:PanelState.Label="{Binding [TurboTile], Source={x:Static loc:Localizer.Instance}}" Click="ChangeTurboMode" AutomationProperties.Name="{Binding [TurboMode], Source={x:Static loc:Localizer.Instance}}"/>
 <ToggleButton x:Name="ComfortToggle" Style="{StaticResource TileToggleStyle}" Tag="{StaticResource Icon.Wind}" panel:PanelState.Label="{Binding [AirflowTile], Source={x:Static loc:Localizer.Instance}}" Click="ChangeComfortMode" AutomationProperties.Name="{Binding [ComfortMode], Source={x:Static loc:Localizer.Instance}}"/>
+<ToggleButton x:Name="SwingToggle" Style="{StaticResource TileToggleStyle}" Tag="{StaticResource Icon.Wind}" panel:PanelState.Label="{Binding [Swing], Source={x:Static loc:Localizer.Instance}}" Click="ChangeSwing" AutomationProperties.Name="{Binding [Swing], Source={x:Static loc:Localizer.Instance}}"/>
 </UniformGrid>
+</StackPanel>
 </Grid>
 </Grid>
 
