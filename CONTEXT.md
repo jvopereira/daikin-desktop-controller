@@ -130,4 +130,5 @@ The supported minimum, maximum, and step derived from the reported Operating Mod
 The on/off control for vertical airflow oscillation. Reported and written as `v_swing`; supported when its numeric or boolean field is reported.
 
 ### Pending Command
+
 A requested value shown immediately until confirmed or reconciled against refreshed device status. After 500 ms without valid control changes, only the latest unsent value per control is sent, at most once. Older results cannot overwrite newer intent. Pending commands finish when the panel is hidden; exiting or changing the configured Air Conditioner cancels them.
